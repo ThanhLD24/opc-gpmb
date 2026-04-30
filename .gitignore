@@ -1,0 +1,42 @@
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
+
+# Python / FastAPI
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+**/*.pyc
+**/*.pyo
+*.egg-info/
+backend/.pytest_cache/
+
+# Uploads / scan files
+backend/uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes (if any local bind-mount data dirs)
+pgdata/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Tool-generated artifacts
+.playwright-mcp/
+.claude/
+
+# Env files with secrets (keep .env.example if exists)
+.env
+backend/.env
+frontend/.env
