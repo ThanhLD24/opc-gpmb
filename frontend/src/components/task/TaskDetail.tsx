@@ -9,7 +9,7 @@ import { useEffect } from 'react'
 import type { UploadFile } from 'antd/es/upload/interface'
 import type { RcFile } from 'antd/es/upload'
 import api from '@/lib/api'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { TaskInstance } from '@/types'
 import { TASK_STATUS_LABELS, LOAI_VB_OPTIONS } from '@/utils/constants'
 import { formatDate } from '@/utils/format'
@@ -24,7 +24,7 @@ interface Props {
 
 export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
   const queryClient = useQueryClient()
-  const currentUser = getCurrentUser()
+  const currentUser = useCurrentUser()
   const [form] = Form.useForm()
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'cbcq'

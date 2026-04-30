@@ -8,7 +8,7 @@ import { useState, useRef } from 'react'
 import dayjs, { Dayjs } from 'dayjs'
 import type { ColumnsType } from 'antd/es/table'
 import api from '@/lib/api'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { formatDate } from '@/utils/format'
 import ViecPhatSinhModal from './ViecPhatSinhModal'
 
@@ -47,7 +47,7 @@ interface Props {
 
 export default function KeHoachThangTab({ hoSoId }: Props) {
   const queryClient = useQueryClient()
-  const currentUser = getCurrentUser()
+  const currentUser = useCurrentUser()
   const canEdit = ['admin', 'cbcq'].includes(currentUser?.role ?? '')
 
   const [selectedMonth, setSelectedMonth] = useState<Dayjs>(dayjs())

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { DataNode } from 'antd/es/tree'
 import api from '@/lib/api'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { TaskInstance, Ho } from '@/types'
 
 interface Props {
@@ -23,7 +23,7 @@ interface ScopeModalState {
 
 export default function WorkflowTree({ tasks, hoSoId, onTaskClick }: Props) {
   const queryClient = useQueryClient()
-  const currentUser = getCurrentUser()
+  const currentUser = useCurrentUser()
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'cbcq'
   const [scopeModal, setScopeModal] = useState<ScopeModalState>({
     open: false,

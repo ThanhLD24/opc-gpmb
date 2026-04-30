@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import type { ColumnsType } from 'antd/es/table'
 import api from '@/lib/api'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { formatDate } from '@/utils/format'
 
 const { Title } = Typography
@@ -126,7 +126,7 @@ function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label
   const [hoSoId, setHoSoId] = useState<string | undefined>()
   const [trangThai, setTrangThai] = useState<string | undefined>()
 
-  const user = getCurrentUser()
+  const user = useCurrentUser()
   const isCbcq = user?.role === 'cbcq'
 
   const { data, isLoading } = useQuery<TasksResponse>({

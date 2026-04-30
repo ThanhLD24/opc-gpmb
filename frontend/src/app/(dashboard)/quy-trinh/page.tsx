@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import type { DataNode } from 'antd/es/tree'
 import api from '@/lib/api'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { WorkflowNode } from '@/types'
 import ImportQuyTrinhModal from '@/components/quy-trinh/ImportQuyTrinhModal'
 import dayjs from 'dayjs'
@@ -43,7 +43,7 @@ function buildTreeData(nodes: WorkflowNode[]): DataNode[] {
 
 export default function QuyTrinhPage() {
   const queryClient = useQueryClient()
-  const currentUser = getCurrentUser()
+  const currentUser = useCurrentUser()
   const isAdmin = currentUser?.role === 'admin'
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null)
   const [importOpen, setImportOpen] = useState(false)

@@ -14,7 +14,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import type { ColumnsType } from 'antd/es/table'
 import api from '@/lib/api'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { HoSo, Ho, TaskInstance, ChiTra, PaginatedResponse, PivotRow } from '@/types'
 import {
   HO_STATUS_LABELS, HO_STATUS_COLORS,
@@ -37,7 +37,7 @@ const { Title } = Typography
 
 // ─── Tab 1: Thong tin chung ──────────────────────────────────────────────────
 function ThongTinChung({ hoSo, refetch }: { hoSo: HoSo; refetch: () => void }) {
-  const currentUser = getCurrentUser()
+  const currentUser = useCurrentUser()
   const canTransition = currentUser?.role === 'admin' || currentUser?.role === 'cbcq'
   const [editOpen, setEditOpen] = useState(false)
 
@@ -107,7 +107,7 @@ function ThongTinChung({ hoSo, refetch }: { hoSo: HoSo; refetch: () => void }) {
 // ─── Tab 2: Ho ───────────────────────────────────────────────────────────────
 function HoTab({ hoSoId }: { hoSoId: string }) {
   const queryClient = useQueryClient()
-  const currentUser = getCurrentUser()
+  const currentUser = useCurrentUser()
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -517,7 +517,7 @@ function PivotTab({ hoSoId }: { hoSoId: string }) {
 // ─── Tab 5: Chi tra ──────────────────────────────────────────────────────────
 function ChiTraTab({ hoSoId }: { hoSoId: string }) {
   const queryClient = useQueryClient()
-  const currentUser = getCurrentUser()
+  const currentUser = useCurrentUser()
   const [formOpen, setFormOpen] = useState(false)
   const [editChiTra, setEditChiTra] = useState<ChiTra | null>(null)
   const [tuChoiModal, setTuChoiModal] = useState<{ open: boolean; id: string | null }>({ open: false, id: null })

@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ColumnsType } from 'antd/es/table'
 import api from '@/lib/api'
-import { getCurrentUser } from '@/lib/auth'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 
 const { Title } = Typography
 
@@ -60,7 +60,7 @@ const TRANG_THAI_COLORS: Record<string, string> = {
 
 export default function HoDanPage() {
   const router = useRouter()
-  const user = getCurrentUser()
+  const user = useCurrentUser()
   const [page, setPage] = useState(1)
   const [hoSoId, setHoSoId] = useState<string | undefined>()
   const [trangThai, setTrangThai] = useState<string | undefined>()
