@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
 from ...db.session import get_db
-from ...db.models import TaskInstance, HoSoWorkflowNode, HoSoGPMB, User, TaskStatusEnum, RoleEnum
+from ...db.models import TaskInstance, HoSoWorkflowNode, HoSoGPMB, User, Ho, TaskStatusEnum, RoleEnum
 from ..deps import get_current_user
 
 router = APIRouter()
@@ -75,6 +75,7 @@ async def list_tasks_global(
         .join(HoSoWorkflowNode, TaskInstance.workflow_node_id == HoSoWorkflowNode.id)
         .join(HoSoGPMB, TaskInstance.ho_so_id == HoSoGPMB.id)
         .outerjoin(User, HoSoGPMB.cbcq_id == User.id)
+        .outerjoin(Ho, TaskInstance.ho_id == Ho.id)
         .where(and_(*conditions))
     )
 
@@ -89,10 +90,13 @@ async def list_tasks_global(
             TaskInstance.ho_so_id,
             TaskInstance.status,
             TaskInstance.updated_at,
+            TaskInstance.ho_id,
             HoSoWorkflowNode.name.label("ten_cong_viec"),
             HoSoGPMB.code.label("ho_so_code"),
             HoSoGPMB.name.label("ho_so_name"),
             User.full_name.label("cbcq_name"),
+            Ho.ma_ho.label("ma_ho"),
+            Ho.ten_chu_ho.label("ten_chu_ho"),
         )
     ).order_by(HoSoGPMB.code.asc(), TaskInstance.updated_at.desc()) \
      .offset((page - 1) * page_size) \
@@ -111,6 +115,9 @@ async def list_tasks_global(
             "trang_thai_label": TASK_STATUS_LABELS.get(row["status"].value, row["status"].value),
             "cbcq_name": row["cbcq_name"],
             "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None,
+            "ho_id": str(row["ho_id"]) if row["ho_id"] else None,
+            "ma_ho": row["ma_ho"],
+            "ten_chu_ho": row["ten_chu_ho"],
         }
         for row in rows
     ]

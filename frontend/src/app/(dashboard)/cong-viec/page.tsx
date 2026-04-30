@@ -21,6 +21,9 @@ interface CongViecItem {
   trang_thai_label: string
   cbcq_name: string | null
   updated_at: string | null
+  ho_id: string | null
+  ma_ho: string | null
+  ten_chu_ho: string | null
 }
 
 interface TasksResponse {
@@ -77,6 +80,18 @@ function buildColumns(page: number): ColumnsType<CongViecItem> {
       dataIndex: 'ten_cong_viec',
       key: 'ten_cong_viec',
       ellipsis: true,
+    },
+    {
+      title: 'Hộ',
+      key: 'ho',
+      width: 180,
+      render: (_: unknown, record: CongViecItem) =>
+        record.ho_id ? (
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 12, color: '#9B1B30' }}>{record.ma_ho}</div>
+            <div style={{ fontSize: 12, color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>{record.ten_chu_ho}</div>
+          </div>
+        ) : <span style={{ color: '#ccc' }}>—</span>,
     },
     {
       title: 'Trạng thái',
