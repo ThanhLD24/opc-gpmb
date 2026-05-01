@@ -1,8 +1,16 @@
 # ─── Frontend Dockerfile ───────────────────────────────────────
 # Next.js 14 + TypeScript + Ant Design
 # Multi-stage build: build → production runtime
+#
+# NEXT_PUBLIC_* variables are embedded at BUILD time by Next.js.
+# Pass API_URL via docker-compose build.args so the correct server
+# address is baked into the bundle — runtime ENV alone won't work.
 
 FROM node:18-alpine AS builder
+
+# Receive the API URL as a build argument (set via docker-compose build.args)
+ARG NEXT_PUBLIC_API_URL=http://localhost:38081
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 WORKDIR /app
 
@@ -10,7 +18,7 @@ WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm ci --frozen-lockfile
 
-# Build Next.js app
+# Build Next.js app — NEXT_PUBLIC_API_URL is baked in here
 COPY frontend .
 RUN npm run build
 
@@ -25,12 +33,11 @@ WORKDIR /app
 
 # Copy built application from builder, owned by the built-in "node" user
 COPY --from=builder --chown=node:node /app/.next ./.next
-COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/package*.json ./
+# Note: no public/ directory in this project — Next.js does not require it
 
 ENV NODE_ENV=production \
-    NEXT_PUBLIC_API_URL=http://localhost:38081 \
     PORT=3000
 
 USER node

@@ -2,7 +2,7 @@
 # Python 3.11 + FastAPI + SQLAlchemy 2.0
 # Multi-stage build for smaller image size
 
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /tmp/build
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -16,22 +16,24 @@ RUN pip install --user --no-cache-dir -r requirements.txt
 
 FROM python:3.11-slim
 
-# Non-root user
+# Non-root user (python:3.11-slim does NOT ship with uid 1000 — safe to create)
 RUN useradd -m -u 1000 appuser
 
 WORKDIR /app
 
-# System dependencies
+# System dependencies — include curl for the health check
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python dependencies from builder
 COPY --from=builder /root/.local /home/appuser/.local
 
 # Copy application code
+# backend/app/ → /app/app/  (Python package; uvicorn entry point: app.main:app)
+# main.py is INSIDE backend/app/ — already included in the COPY above
 COPY backend/app ./app
-COPY backend/app/main.py .
 COPY backend/.env.example .env.example
 
 # Create uploads directory

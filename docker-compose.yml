@@ -68,6 +68,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        # NEXT_PUBLIC_* vars are baked in at build time — must be passed here
+        NEXT_PUBLIC_API_URL: ${API_URL:-http://localhost:38081}
     container_name: opc_frontend
     restart: unless-stopped
 
