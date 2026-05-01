@@ -1,11 +1,13 @@
 'use client'
-import { Empty, Select, Space, Spin, Table, Tabs, Tag, Typography } from 'antd'
+import { Empty, notification, Select, Space, Spin, Table, Tabs, Tag, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import type { ColumnsType } from 'antd/es/table'
 import api from '@/lib/api'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { formatDate } from '@/utils/format'
+import TaskDetail from '@/components/task/TaskDetail'
+import { TaskInstance } from '@/types'
 
 const { Title } = Typography
 
@@ -125,9 +127,27 @@ function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label
   const [page, setPage] = useState(1)
   const [hoSoId, setHoSoId] = useState<string | undefined>()
   const [trangThai, setTrangThai] = useState<string | undefined>()
+  const [drawerTask, setDrawerTask] = useState<TaskInstance | null>(null)
+  const [drawerHoSoId, setDrawerHoSoId] = useState<string>('')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [fetchingTask, setFetchingTask] = useState(false)
 
   const user = useCurrentUser()
   const isCbcq = user?.role === 'cbcq'
+
+  const handleRowClick = async (record: CongViecItem) => {
+    setFetchingTask(true)
+    try {
+      const res = await api.get(`/ho-so/${record.ho_so_id}/tasks/${record.id}`)
+      setDrawerTask(res.data)
+      setDrawerHoSoId(record.ho_so_id)
+      setDrawerOpen(true)
+    } catch {
+      notification.error({ message: 'Không thể tải chi tiết công việc' })
+    } finally {
+      setFetchingTask(false)
+    }
+  }
 
   const { data, isLoading } = useQuery<TasksResponse>({
     queryKey: ['tasks-all', page, hoSoId, trangThai],
@@ -191,7 +211,11 @@ function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label
             columns={columns}
             dataSource={data?.items ?? []}
             rowKey="id"
-            loading={isLoading}
+            loading={isLoading || fetchingTask}
+            onRow={(record) => ({
+              onClick: () => handleRowClick(record),
+              style: { cursor: 'pointer' },
+            })}
             pagination={{
               current: page,
               pageSize: 20,
@@ -205,6 +229,12 @@ function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label
           />
         </div>
       )}
+      <TaskDetail
+        task={drawerTask}
+        hoSoId={drawerHoSoId}
+        open={drawerOpen}
+        onClose={() => { setDrawerOpen(false); setDrawerTask(null) }}
+      />
     </div>
   )
 }
@@ -213,6 +243,24 @@ function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label
 
 function ViecCuaToiTab() {
   const [page, setPage] = useState(1)
+  const [drawerTask, setDrawerTask] = useState<TaskInstance | null>(null)
+  const [drawerHoSoId, setDrawerHoSoId] = useState<string>('')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [fetchingTask, setFetchingTask] = useState(false)
+
+  const handleRowClick = async (record: CongViecItem) => {
+    setFetchingTask(true)
+    try {
+      const res = await api.get(`/ho-so/${record.ho_so_id}/tasks/${record.id}`)
+      setDrawerTask(res.data)
+      setDrawerHoSoId(record.ho_so_id)
+      setDrawerOpen(true)
+    } catch {
+      notification.error({ message: 'Không thể tải chi tiết công việc' })
+    } finally {
+      setFetchingTask(false)
+    }
+  }
 
   const { data, isLoading } = useQuery<TasksResponse>({
     queryKey: ['tasks-my', page],
@@ -236,7 +284,11 @@ function ViecCuaToiTab() {
           columns={columns}
           dataSource={data?.items ?? []}
           rowKey="id"
-          loading={isLoading}
+          loading={isLoading || fetchingTask}
+          onRow={(record) => ({
+            onClick: () => handleRowClick(record),
+            style: { cursor: 'pointer' },
+          })}
           pagination={{
             current: page,
             pageSize: 20,
@@ -250,6 +302,12 @@ function ViecCuaToiTab() {
           locale={{ emptyText: 'Không có công việc nào được giao cho bạn' }}
         />
       )}
+      <TaskDetail
+        task={drawerTask}
+        hoSoId={drawerHoSoId}
+        open={drawerOpen}
+        onClose={() => { setDrawerOpen(false); setDrawerTask(null) }}
+      />
     </div>
   )
 }

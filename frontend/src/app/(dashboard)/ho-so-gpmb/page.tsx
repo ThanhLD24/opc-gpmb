@@ -34,6 +34,19 @@ export default function HoSoListPage() {
     setCurrentUser(getCurrentUser())
   }, [])
 
+  const { data: activeTemplate } = useQuery<{ id: string; name: string } | null>({
+    queryKey: ['workflow-template-info'],
+    queryFn: async () => {
+      try {
+        const res = await api.get('/workflow/template')
+        return { id: res.data.id, name: res.data.name }
+      } catch {
+        return null
+      }
+    },
+    staleTime: 300_000,
+  })
+
   const { data, isLoading } = useQuery<PaginatedResponse<HoSo>>({
     queryKey: ['ho-so', page, pageSize, statusFilter, search],
     queryFn: async () => {
@@ -257,6 +270,20 @@ export default function HoSoListPage() {
             <Form.Item name="ngay_ket_thuc" label="Ngày kết thúc">
               <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="DD/MM/YYYY" />
             </Form.Item>
+          </div>
+          <div style={{
+            background: '#f6f0f0',
+            border: '1px solid #f0e0e0',
+            borderRadius: 6,
+            padding: '10px 14px',
+            marginBottom: 16,
+            fontSize: 13,
+          }}>
+            <span style={{ color: '#666' }}>Quy trình áp dụng: </span>
+            {activeTemplate
+              ? <span style={{ fontWeight: 600, color: '#9B1B30' }}>{activeTemplate.name}</span>
+              : <span style={{ color: '#999', fontStyle: 'italic' }}>Chưa có quy trình nào được kích hoạt</span>
+            }
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <Button onClick={() => { setModalOpen(false); form.resetFields() }}>Hủy</Button>
