@@ -33,8 +33,8 @@ COPY --from=builder /root/.local /home/appuser/.local
 # Copy application code
 # backend/app/ → /app/app/  (Python package; uvicorn entry point: app.main:app)
 # main.py is INSIDE backend/app/ — already included in the COPY above
+# NOTE: Do NOT copy backend/.env.example — it has localhost URLs that confuse debugging
 COPY backend/app ./app
-COPY backend/.env.example .env.example
 
 # Create uploads directory
 RUN mkdir -p /app/uploads && chown -R appuser:appuser /app

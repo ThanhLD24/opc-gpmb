@@ -48,8 +48,9 @@ services:
       API_URL: ${API_URL:-http://localhost:38081}
 
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
+    # restart: unless-stopped handles retry if postgres isn't ready yet
+    # For docker-compose v2+, condition: service_healthy works better
 
     volumes:
       - backend_uploads:/app/uploads
