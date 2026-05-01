@@ -136,6 +136,26 @@ class WorkflowNode(Base):
         remote_side="WorkflowNode.id",
         foreign_keys="WorkflowNode.parent_id",
     )
+    documents: Mapped[List["WorkflowNodeDocument"]] = relationship(
+        "WorkflowNodeDocument", back_populates="node", cascade="all, delete-orphan"
+    )
+
+
+class WorkflowNodeDocument(Base):
+    __tablename__ = "workflow_node_documents"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    node_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("workflow_nodes.id", ondelete="CASCADE"), nullable=False
+    )
+    ten_tai_lieu: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    uploaded_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    node: Mapped["WorkflowNode"] = relationship("WorkflowNode", back_populates="documents")
 
 
 class HoSoGPMB(Base):
@@ -368,6 +388,9 @@ class TaskInstance(Base):
         "HoSoWorkflowNode", back_populates="task_instances"
     )
     ho: Mapped[Optional["Ho"]] = relationship("Ho", back_populates="task_instances")
+    attachments: Mapped[List["TaskAttachment"]] = relationship(
+        "TaskAttachment", back_populates="task", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         # For per_household tasks: unique per (node, ho)
@@ -383,6 +406,23 @@ class TaskInstance(Base):
             postgresql_where="ho_id IS NULL",
         ),
     )
+
+
+class TaskAttachment(Base):
+    __tablename__ = "task_attachments"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_instance_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("task_instances.id", ondelete="CASCADE"), nullable=False
+    )
+    ten_tai_lieu: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    uploaded_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    task: Mapped["TaskInstance"] = relationship("TaskInstance", back_populates="attachments")
 
 
 class HoSoChiTra(Base):
@@ -492,6 +532,7 @@ class KeHoachThangItem(Base):
     ngay_du_kien: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     ghi_chu: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     la_viec_phat_sinh: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    da_hoan_thanh: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     thu_tu: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     ke_hoach: Mapped["KeHoachThang"] = relationship(

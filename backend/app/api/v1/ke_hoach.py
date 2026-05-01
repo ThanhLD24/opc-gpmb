@@ -58,6 +58,7 @@ class KeHoachThangCreate(BaseModel):
 class KeHoachThangItemUpdate(BaseModel):
     ngay_du_kien: Optional[str] = None  # "YYYY-MM-DD"
     ghi_chu: Optional[str] = None
+    da_hoan_thanh: Optional[bool] = None  # chỉ áp dụng cho việc phát sinh
 
 
 class ViecPhatSinhCreate(BaseModel):
@@ -79,6 +80,7 @@ def _item_to_dict(item: KeHoachThangItem) -> Dict[str, Any]:
         "ngay_du_kien": item.ngay_du_kien.isoformat() if item.ngay_du_kien else None,
         "ghi_chu": item.ghi_chu,
         "la_viec_phat_sinh": item.la_viec_phat_sinh,
+        "da_hoan_thanh": item.da_hoan_thanh,
         "thu_tu": item.thu_tu,
     }
 
@@ -290,6 +292,13 @@ async def update_ke_hoach_item(
             )
     if body.ghi_chu is not None:
         item.ghi_chu = body.ghi_chu
+    if body.da_hoan_thanh is not None:
+        if not item.la_viec_phat_sinh:
+            raise HTTPException(
+                status_code=400,
+                detail="Chỉ có thể cập nhật trạng thái cho việc phát sinh, không phải công việc quy trình",
+            )
+        item.da_hoan_thanh = body.da_hoan_thanh
 
     await db.commit()
     await db.refresh(item)

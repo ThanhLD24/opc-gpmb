@@ -15,7 +15,7 @@
 ## Credentials Demo
 - admin / Admin@123
 - cbcq / Cbcq@123
-- ke_toan / KeToan@123
+- ketoan / Ketoan@123
 - gddh / Gddh@123
 
 ## Implementation Status (2026-04-29)

@@ -23,7 +23,7 @@ export default function ChiTraForm({ hoSoId, open, onClose, onSuccess }: Props) 
     queryKey: ['ho-thong-nhat', hoSoId],
     queryFn: async () => {
       const res = await api.get(`/ho-so/${hoSoId}/ho?status=da_thong_nhat&page_size=500`)
-      return res.data.items || res.data
+      return res.data.items ?? []
     },
     enabled: open,
     staleTime: 0,

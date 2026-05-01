@@ -6,10 +6,11 @@ import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -20,11 +21,14 @@ from ...db.models import (
     HoSoGPMB,
     HoSoWorkflowNode,
     TaskInstance,
+    TaskAttachment,
     TaskStatusEnum,
     NodeHouseholdScope,
     Ho,
     User,
     RoleEnum,
+    WorkflowNode,
+    WorkflowNodeDocument,
 )
 from ...core.config import settings
 from ...services.task_service import (
@@ -74,6 +78,76 @@ def task_to_dict(task: TaskInstance) -> Dict[str, Any]:
         "completed_at": task.completed_at.isoformat() if task.completed_at else None,
         "created_at": task.created_at.isoformat(),
         "updated_at": task.updated_at.isoformat(),
+    }
+
+
+def task_to_dict_enriched(task: TaskInstance) -> Dict[str, Any]:
+    """Enriched task dict that includes HoSoWorkflowNode metadata.
+    Requires task.workflow_node to be eagerly loaded via selectinload,
+    and task.attachments + node.source_node.documents to be loaded.
+    """
+    node = task.workflow_node
+    is_leaf = bool(node and not node.children)
+
+    # Guide documents from the source WorkflowNode template
+    node_documents: List[Dict] = []
+    if node and node.source_node and hasattr(node.source_node, "documents"):
+        node_documents = [
+            {
+                "id": str(d.id),
+                "ten_tai_lieu": d.ten_tai_lieu,
+                "url": f"/uploads/{d.file_path}",
+                "uploaded_at": d.uploaded_at.isoformat(),
+            }
+            for d in node.source_node.documents
+        ]
+
+    # Attachments on this task instance
+    attachments: List[Dict] = []
+    if hasattr(task, "attachments") and task.attachments:
+        attachments = [
+            {
+                "id": str(a.id),
+                "ten_tai_lieu": a.ten_tai_lieu,
+                "url": f"/uploads/{a.file_path}",
+                "uploaded_at": a.uploaded_at.isoformat(),
+            }
+            for a in task.attachments
+        ]
+
+    return {
+        # Task fields
+        "id": str(task.id),
+        "ho_so_id": str(task.ho_so_id),
+        "workflow_node_id": str(task.workflow_node_id),
+        "ho_id": str(task.ho_id) if task.ho_id else None,
+        "status": task.status.value,
+        "so_vb": task.so_vb,
+        "ngay_vb": task.ngay_vb.isoformat() if task.ngay_vb else None,
+        "loai_vb": task.loai_vb,
+        "gia_tri_trinh": task.gia_tri_trinh,
+        "gia_tri_duyet": task.gia_tri_duyet,
+        "ghi_chu": task.ghi_chu,
+        "file_scan_url": f"/uploads/{task.scan_file_path}" if task.scan_file_path else None,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+        "created_at": task.created_at.isoformat(),
+        "updated_at": task.updated_at.isoformat(),
+        # Node metadata
+        "name": node.name if node else None,
+        "code": node.code if node else None,
+        "level": node.level if node else None,
+        "per_household": node.per_household if node else False,
+        "require_scan": node.require_scan if node else False,
+        "is_leaf": is_leaf if node else False,
+        "field_so_vb": node.field_so_vb if node else False,
+        "field_ngay_vb": node.field_ngay_vb if node else False,
+        "field_loai_vb": node.field_loai_vb if node else False,
+        "field_gia_tri_trinh": node.field_gia_tri_trinh if node else False,
+        "field_gia_tri_duyet": node.field_gia_tri_duyet if node else False,
+        "field_ghi_chu": node.field_ghi_chu if node else False,
+        # Documents & attachments
+        "node_documents": node_documents,
+        "attachments": attachments,
     }
 
 
@@ -170,7 +244,16 @@ async def get_task(
     current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(TaskInstance).where(
+        select(TaskInstance)
+        .options(
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.children),
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.source_node)
+            .selectinload(WorkflowNode.documents),
+            selectinload(TaskInstance.attachments),
+        )
+        .where(
             TaskInstance.id == uuid.UUID(task_id),
             TaskInstance.ho_so_id == uuid.UUID(ho_so_id),
         )
@@ -178,7 +261,7 @@ async def get_task(
     task = result.scalar_one_or_none()
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
-    return task_to_dict(task)
+    return task_to_dict_enriched(task)
 
 
 @router.patch("/{ho_so_id}/tasks/{task_id}/status")
@@ -197,7 +280,16 @@ async def update_task_status(
         )
 
     result = await db.execute(
-        select(TaskInstance).where(
+        select(TaskInstance)
+        .options(
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.children),
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.source_node)
+            .selectinload(WorkflowNode.documents),
+            selectinload(TaskInstance.attachments),
+        )
+        .where(
             TaskInstance.id == uuid.UUID(task_id),
             TaskInstance.ho_so_id == uuid.UUID(ho_so_id),
         )
@@ -210,6 +302,27 @@ async def update_task_status(
         new_status = TaskStatusEnum(body.status)
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid status: {body.status}")
+
+    # Validate required fields before marking hoan_thanh
+    if new_status == TaskStatusEnum.hoan_thanh:
+        node = task.workflow_node
+        if node:
+            missing = []
+            if node.field_so_vb and not task.so_vb:
+                missing.append("Số văn bản")
+            if node.field_ngay_vb and not task.ngay_vb:
+                missing.append("Ngày văn bản")
+            if node.field_loai_vb and not task.loai_vb:
+                missing.append("Loại văn bản")
+            if node.field_gia_tri_trinh and task.gia_tri_trinh is None:
+                missing.append("Giá trị trình")
+            if node.field_gia_tri_duyet and task.gia_tri_duyet is None:
+                missing.append("Giá trị duyệt")
+            if missing:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Chưa điền đủ thông tin bắt buộc: {', '.join(missing)}",
+                )
 
     task.status = new_status
     if new_status == TaskStatusEnum.hoan_thanh:
@@ -225,7 +338,21 @@ async def update_task_status(
     )
     await db.commit()
     await db.refresh(task)
-    return task_to_dict(task)
+    # Re-fetch with node loaded to return enriched response
+    result2 = await db.execute(
+        select(TaskInstance)
+        .options(
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.children),
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.source_node)
+            .selectinload(WorkflowNode.documents),
+            selectinload(TaskInstance.attachments),
+        )
+        .where(TaskInstance.id == task.id)
+    )
+    task = result2.scalar_one()
+    return task_to_dict_enriched(task)
 
 
 @router.patch("/{ho_so_id}/tasks/{task_id}/fields")
@@ -247,7 +374,16 @@ async def update_task_fields(
         )
 
     result = await db.execute(
-        select(TaskInstance).where(
+        select(TaskInstance)
+        .options(
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.children),
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.source_node)
+            .selectinload(WorkflowNode.documents),
+            selectinload(TaskInstance.attachments),
+        )
+        .where(
             TaskInstance.id == uuid.UUID(task_id),
             TaskInstance.ho_so_id == uuid.UUID(ho_so_id),
         )
@@ -277,8 +413,21 @@ async def update_task_fields(
         task.ghi_chu = body.ghi_chu
 
     await db.commit()
-    await db.refresh(task)
-    return task_to_dict(task)
+    # Re-fetch with node loaded to return enriched response
+    result2 = await db.execute(
+        select(TaskInstance)
+        .options(
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.children),
+            selectinload(TaskInstance.workflow_node)
+            .selectinload(HoSoWorkflowNode.source_node)
+            .selectinload(WorkflowNode.documents),
+            selectinload(TaskInstance.attachments),
+        )
+        .where(TaskInstance.id == task.id)
+    )
+    task = result2.scalar_one()
+    return task_to_dict_enriched(task)
 
 
 @router.post("/{ho_so_id}/tasks/{task_id}/upload")
@@ -557,3 +706,87 @@ async def export_pivot(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename=pivot_{ho_so_id}.xlsx"},
     )
+
+
+# ── Task Attachments ─────────────────────────────────────────────────────────
+
+@router.post("/{ho_so_id}/tasks/{task_id}/attachments", status_code=status.HTTP_201_CREATED)
+async def upload_task_attachment(
+    ho_so_id: str,
+    task_id: str,
+    ten_tai_lieu: str = Form(...),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in (RoleEnum.admin, RoleEnum.cbcq):
+        raise HTTPException(status_code=403, detail="Không có quyền đính kèm văn bản")
+
+    result = await db.execute(
+        select(TaskInstance).where(
+            TaskInstance.id == uuid.UUID(task_id),
+            TaskInstance.ho_so_id == uuid.UUID(ho_so_id),
+        )
+    )
+    task = result.scalar_one_or_none()
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    dest_dir = os.path.join(settings.UPLOAD_DIR, "task-attachments", task_id)
+    os.makedirs(dest_dir, exist_ok=True)
+    safe_name = f"{uuid.uuid4()}_{file.filename}"
+    dest_path = os.path.join(dest_dir, safe_name)
+    contents = await file.read()
+    if len(contents) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File quá lớn (tối đa 50MB)")
+    with open(dest_path, "wb") as f:
+        f.write(contents)
+
+    relative_path = os.path.join("task-attachments", task_id, safe_name)
+    attachment = TaskAttachment(
+        task_instance_id=uuid.UUID(task_id),
+        ten_tai_lieu=ten_tai_lieu,
+        file_path=relative_path,
+        uploaded_by=current_user.id,
+    )
+    db.add(attachment)
+    await db.commit()
+    await db.refresh(attachment)
+    return {
+        "id": str(attachment.id),
+        "ten_tai_lieu": attachment.ten_tai_lieu,
+        "url": f"/uploads/{attachment.file_path}",
+        "uploaded_at": attachment.uploaded_at.isoformat(),
+    }
+
+
+@router.delete("/{ho_so_id}/tasks/{task_id}/attachments/{att_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_task_attachment(
+    ho_so_id: str,
+    task_id: str,
+    att_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in (RoleEnum.admin, RoleEnum.cbcq):
+        raise HTTPException(status_code=403, detail="Không có quyền xóa văn bản")
+
+    result = await db.execute(
+        select(TaskAttachment).where(
+            TaskAttachment.id == uuid.UUID(att_id),
+            TaskAttachment.task_instance_id == uuid.UUID(task_id),
+        )
+    )
+    att = result.scalar_one_or_none()
+    if att is None:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    try:
+        full_path = os.path.join(settings.UPLOAD_DIR, att.file_path)
+        if os.path.exists(full_path):
+            os.remove(full_path)
+    except OSError:
+        pass
+
+    await db.delete(att)
+    await db.commit()

@@ -1,5 +1,39 @@
 # BMAD Handoff Log — OPC GPMB
 
+## Entry 020 — 2026-05-01
+**From:** Tech Lead (Sprint 8-F1)
+**To:** Testing / Done
+**Artifacts:** Sprint 8-F1 implemented and committed
+**Status:** ✅ COMPLETE
+
+### Summary
+- **S8-BE-01** — `global_tasks.py`: xóa `my_tasks` cbcq filter bug, ke_toan/gddh thấy tất cả tasks (48K tasks); thêm 403 guard trên `update_task_status`; phân quyền field-level trên `update_task_fields` (ke_toan chỉ finance fields)
+- **S8-FE-01** — `TaskDetail.tsx`: thêm `canFillFinance`/`canSave`, ke_toan thấy finance fields + Upload, không thấy Switch status và admin fields
+- TypeScript: 0 errors
+- Commits: ba82a7a (BE), 50a390a (FE)
+
+### Open items
+- S8-F2 (task attachments) chưa implement
+- Sprint 8-F1 kickoff saved tại `docs/architecture/sprint-8-f1-kickoff.md`
+
+---
+
+## Entry 019 — 2026-05-01
+**From:** Product Owner
+**To:** Tech Lead (Sprint 8 planning)
+**Artifacts:** 2 feature briefs cho Sprint 8
+**Status:** ✅ COMPLETE — feature briefs saved, ready for TL sprint planning
+
+### Summary
+- **S8-F1** — Fix "Công việc của tôi" + phân quyền action buttons theo role (`docs/features/s8-cong-viec-cua-toi-fix-brief.md`)
+- **S8-F2** — Đính kèm tài liệu cho công việc — bảng `task_attachments` mới, 4 endpoints, FE section trong TaskDetail (`docs/features/s8-task-attachments-brief.md`)
+
+### Open items
+- S8-F1: Cần TL xác nhận bảng phân quyền (ke_toan có quyền gì trên task status/fields)
+- S8-F2: Cần TL quyết định storage strategy (local disk giữ nguyên hay S3)
+
+---
+
 ## Entry 018 — 2026-05-01
 **From:** BMAD Orchestrator (post-demo hotfixes)
 **To:** Continuous improvement

@@ -1,58 +1,99 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  db:
+  # ─── PostgreSQL Database ───────────────────────────────────────
+  postgres:
     image: postgres:15-alpine
+    container_name: opc_postgres
+    restart: unless-stopped
+
     environment:
-      POSTGRES_USER: opc
-      POSTGRES_PASSWORD: opc_secret
-      POSTGRES_DB: opc_gpmb
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-opc_gpmb}
+      POSTGRES_USER: ${POSTGRES_USER:-opc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_in_production}
+      PGDATA: /var/lib/postgresql/data/pgdata
+
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U opc -d opc_gpmb"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opc} -d ${POSTGRES_DB:-opc_gpmb}"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
+    networks:
+      - opc_network
+
+    security_opt:
+      - no-new-privileges:true
+
+  # ─── FastAPI Backend ──────────────────────────────────────────
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    environment:
-      DATABASE_URL: postgresql+asyncpg://opc:opc_secret@db:5432/opc_gpmb
-      SECRET_KEY: "opc-secret-key-change-in-prod-2026"
-      ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: 480
-      UPLOAD_DIR: /app/uploads
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
-      - uploads:/app/uploads
-    depends_on:
-      db:
-        condition: service_healthy
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: opc_backend
+    restart: unless-stopped
 
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-opc}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-opc_gpmb}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-super-secret-key-change-in-production}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRATION_HOURS: 24
+      UPLOAD_DIR: /app/uploads
+      API_URL: ${API_URL:-http://localhost:8123}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    volumes:
+      - backend_uploads:/app/uploads
+
+    ports:
+      - "${BACKEND_PORT:-8123}:8123"
+
+    networks:
+      - opc_network
+
+    security_opt:
+      - no-new-privileges:true
+
+  # ─── Next.js Frontend ────────────────────────────────────────
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: opc_frontend
+    restart: unless-stopped
+
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      NEXT_PUBLIC_API_URL: ${API_URL:-http://localhost:8123}
+      NODE_ENV: production
+      PORT: 3123
+
     depends_on:
       - backend
-    command: npm run dev
+
+    ports:
+      - "${FRONTEND_PORT:-3123}:3123"
+
+    networks:
+      - opc_network
+
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
-  pg_data:
-  uploads:
+  postgres_data:
+    driver: local
+  backend_uploads:
+    driver: local
+
+networks:
+  opc_network:
+    driver: bridge

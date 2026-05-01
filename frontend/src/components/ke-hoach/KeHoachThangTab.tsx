@@ -1,6 +1,6 @@
 'use client'
 import {
-  Alert, Button, DatePicker, Empty, Input, Popconfirm, Space, Spin, Table, Tag, message,
+  Alert, Button, DatePicker, Empty, Input, Popconfirm, Space, Spin, Switch, Table, Tag, message,
 } from 'antd'
 import { DownloadOutlined, FilePdfOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -11,6 +11,8 @@ import api from '@/lib/api'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { formatDate } from '@/utils/format'
 import ViecPhatSinhModal from './ViecPhatSinhModal'
+import TaskDetail from '@/components/task/TaskDetail'
+import type { TaskInstance } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +25,7 @@ interface KeHoachThangItem {
   ngay_du_kien: string | null
   ghi_chu: string | null
   la_viec_phat_sinh: boolean
+  da_hoan_thanh: boolean
   thu_tu: number
 }
 
@@ -56,6 +59,8 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
   const [pdfLoading, setPdfLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [viecPhatSinhOpen, setViecPhatSinhOpen] = useState(false)
+  const [drawerTask, setDrawerTask] = useState<TaskInstance | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   // Debounce refs: map from itemId -> timeout handle
   const debounceRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -100,7 +105,7 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
 
   // ─── Inline patch (debounced) ──────────────────────────────────────────────
 
-  const patchItem = (itemId: string, payload: { ngay_du_kien?: string | null; ghi_chu?: string | null }) => {
+  const patchItem = (itemId: string, payload: { ngay_du_kien?: string | null; ghi_chu?: string | null; da_hoan_thanh?: boolean }) => {
     if (!keHoach) return
     clearTimeout(debounceRefs.current[itemId])
     debounceRefs.current[itemId] = setTimeout(async () => {
@@ -197,6 +202,22 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
       dataIndex: 'ten_cong_viec',
       key: 'ten_cong_viec',
       ellipsis: true,
+      render: (text: string, record: KeHoachThangItem) =>
+        !record.la_viec_phat_sinh && record.task_instance_id ? (
+          <a
+            onClick={async () => {
+              try {
+                const res = await api.get(`/ho-so/${hoSoId}/tasks/${record.task_instance_id}`)
+                setDrawerTask(res.data)
+                setDrawerOpen(true)
+              } catch {
+                message.error('Không tải được thông tin công việc')
+              }
+            }}
+          >
+            {text}
+          </a>
+        ) : text,
     },
     {
       title: 'Loại',
@@ -208,6 +229,22 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
         ) : (
           <Tag color="blue">Quy trình</Tag>
         ),
+    },
+    {
+      title: 'Trạng thái',
+      key: 'trang_thai',
+      width: 140,
+      render: (_: unknown, record: KeHoachThangItem) =>
+        record.la_viec_phat_sinh ? (
+          <Switch
+            size="small"
+            checked={record.da_hoan_thanh}
+            checkedChildren="Hoàn thành"
+            unCheckedChildren="Đang thực hiện"
+            disabled={!canEdit}
+            onChange={(checked) => patchItem(record.id, { da_hoan_thanh: checked })}
+          />
+        ) : null,
     },
     {
       title: 'Ngày dự kiến',
@@ -367,6 +404,14 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
           </div>
         </div>
       )}
+
+      {/* Task detail drawer */}
+      <TaskDetail
+        task={drawerTask}
+        hoSoId={hoSoId}
+        open={drawerOpen}
+        onClose={() => { setDrawerOpen(false); setDrawerTask(null) }}
+      />
 
       {/* Việc phát sinh modal */}
       {keHoach && (

@@ -1,19 +1,23 @@
 from __future__ import annotations
 import io
+import os
 import uuid
 from datetime import date
 from typing import Optional, List, Any, Dict
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 import openpyxl
 from openpyxl.styles import Font
 
 from ...db.session import get_db
-from ...db.models import WorkflowTemplate, WorkflowNode, User, RoleEnum
+from ...db.models import WorkflowTemplate, WorkflowNode, WorkflowNodeDocument, User, RoleEnum
 from ..deps import get_current_user, require_roles
+
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/tmp/odin-uploads")
 
 router = APIRouter()
 
@@ -63,6 +67,17 @@ class WorkflowNodeUpdate(BaseModel):
 
 
 def node_to_dict(node: WorkflowNode) -> Dict[str, Any]:
+    docs = []
+    if hasattr(node, "documents") and node.documents:
+        docs = [
+            {
+                "id": str(d.id),
+                "ten_tai_lieu": d.ten_tai_lieu,
+                "url": f"/uploads/{d.file_path}",
+                "uploaded_at": d.uploaded_at.isoformat(),
+            }
+            for d in node.documents
+        ]
     return {
         "id": str(node.id),
         "template_id": str(node.template_id),
@@ -84,6 +99,7 @@ def node_to_dict(node: WorkflowNode) -> Dict[str, Any]:
         "field_gia_tri_trinh": node.field_gia_tri_trinh,
         "field_gia_tri_duyet": node.field_gia_tri_duyet,
         "field_ghi_chu": node.field_ghi_chu,
+        "documents": docs,
         "children": [],
     }
 
@@ -104,6 +120,135 @@ def build_tree(nodes: List[WorkflowNode]) -> List[Dict[str, Any]]:
     return roots
 
 
+# ── Pydantic schemas (template) ───────────────────────────────────────────────
+
+class WorkflowTemplateCreate(BaseModel):
+    name: str
+
+
+class WorkflowTemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+# ── Template CRUD ─────────────────────────────────────────────────────────────
+
+@router.get("/templates")
+async def list_templates(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all workflow templates with node counts."""
+    result = await db.execute(
+        select(WorkflowTemplate).order_by(WorkflowTemplate.created_at.desc())
+    )
+    templates = result.scalars().all()
+
+    out = []
+    for t in templates:
+        count_result = await db.execute(
+            select(WorkflowNode).where(WorkflowNode.template_id == t.id)
+        )
+        node_count = len(count_result.scalars().all())
+        out.append({
+            "id": str(t.id),
+            "name": t.name,
+            "is_active": t.is_active,
+            "created_at": t.created_at.isoformat(),
+            "node_count": node_count,
+        })
+    return out
+
+
+@router.post("/templates", status_code=201)
+async def create_template(
+    body: WorkflowTemplateCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles(RoleEnum.admin)),
+):
+    t = WorkflowTemplate(name=body.name, is_active=False)
+    db.add(t)
+    await db.commit()
+    await db.refresh(t)
+    return {"id": str(t.id), "name": t.name, "is_active": t.is_active, "created_at": t.created_at.isoformat(), "node_count": 0}
+
+
+@router.get("/templates/{template_id}")
+async def get_template(
+    template_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(WorkflowTemplate).where(WorkflowTemplate.id == uuid.UUID(template_id))
+    )
+    template = result.scalar_one_or_none()
+    if template is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    nodes_result = await db.execute(
+        select(WorkflowNode)
+        .where(WorkflowNode.template_id == template.id)
+        .options(selectinload(WorkflowNode.documents))
+    )
+    nodes = list(nodes_result.scalars().all())
+
+    return {
+        "id": str(template.id),
+        "name": template.name,
+        "is_active": template.is_active,
+        "created_at": template.created_at.isoformat(),
+        "nodes": build_tree(nodes),
+    }
+
+
+@router.put("/templates/{template_id}")
+async def update_template(
+    template_id: str,
+    body: WorkflowTemplateUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles(RoleEnum.admin)),
+):
+    result = await db.execute(
+        select(WorkflowTemplate).where(WorkflowTemplate.id == uuid.UUID(template_id))
+    )
+    template = result.scalar_one_or_none()
+    if template is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    if body.name is not None:
+        template.name = body.name
+    if body.is_active is not None:
+        if body.is_active:
+            # Deactivate all others first
+            all_result = await db.execute(select(WorkflowTemplate))
+            for t in all_result.scalars().all():
+                t.is_active = False
+        template.is_active = body.is_active
+
+    await db.commit()
+    await db.refresh(template)
+    return {"id": str(template.id), "name": template.name, "is_active": template.is_active}
+
+
+@router.delete("/templates/{template_id}", status_code=204)
+async def delete_template(
+    template_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles(RoleEnum.admin)),
+):
+    result = await db.execute(
+        select(WorkflowTemplate).where(WorkflowTemplate.id == uuid.UUID(template_id))
+    )
+    template = result.scalar_one_or_none()
+    if template is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+    if template.is_active:
+        raise HTTPException(status_code=400, detail="Không thể xóa quy trình đang hoạt động")
+    await db.delete(template)
+    await db.commit()
+
+
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("/template")
@@ -119,7 +264,9 @@ async def get_active_template(
         raise HTTPException(status_code=404, detail="No active workflow template found")
 
     nodes_result = await db.execute(
-        select(WorkflowNode).where(WorkflowNode.template_id == template.id)
+        select(WorkflowNode)
+        .where(WorkflowNode.template_id == template.id)
+        .options(selectinload(WorkflowNode.documents))
     )
     nodes = list(nodes_result.scalars().all())
 
@@ -138,7 +285,7 @@ async def list_nodes(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = select(WorkflowNode)
+    q = select(WorkflowNode).options(selectinload(WorkflowNode.documents))
     if template_id:
         q = q.where(WorkflowNode.template_id == uuid.UUID(template_id))
     result = await db.execute(q)
@@ -175,7 +322,13 @@ async def create_node(
     )
     db.add(node)
     await db.commit()
-    await db.refresh(node)
+    # Reload với selectinload để tránh MissingGreenlet khi node_to_dict truy cập documents
+    result = await db.execute(
+        select(WorkflowNode)
+        .where(WorkflowNode.id == node.id)
+        .options(selectinload(WorkflowNode.documents))
+    )
+    node = result.scalar_one()
     return node_to_dict(node)
 
 
@@ -197,7 +350,13 @@ async def update_node(
         setattr(node, field, value)
 
     await db.commit()
-    await db.refresh(node)
+    # Reload với selectinload để tránh MissingGreenlet khi node_to_dict truy cập documents
+    result = await db.execute(
+        select(WorkflowNode)
+        .where(WorkflowNode.id == node.id)
+        .options(selectinload(WorkflowNode.documents))
+    )
+    node = result.scalar_one()
     return node_to_dict(node)
 
 
@@ -214,6 +373,104 @@ async def delete_node(
     if node is None:
         raise HTTPException(status_code=404, detail="Node not found")
     await db.delete(node)
+    await db.commit()
+
+
+# ── Node Documents ───────────────────────────────────────────────────────────
+
+@router.get("/nodes/{node_id}/documents")
+async def list_node_documents(
+    node_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(WorkflowNode)
+        .where(WorkflowNode.id == uuid.UUID(node_id))
+        .options(selectinload(WorkflowNode.documents))
+    )
+    node = result.scalar_one_or_none()
+    if node is None:
+        raise HTTPException(status_code=404, detail="Node not found")
+    return [
+        {
+            "id": str(d.id),
+            "ten_tai_lieu": d.ten_tai_lieu,
+            "url": f"/uploads/{d.file_path}",
+            "uploaded_at": d.uploaded_at.isoformat(),
+        }
+        for d in node.documents
+    ]
+
+
+@router.post("/nodes/{node_id}/documents", status_code=status.HTTP_201_CREATED)
+async def upload_node_document(
+    node_id: str,
+    ten_tai_lieu: str = Form(...),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles(RoleEnum.admin)),
+):
+    result = await db.execute(
+        select(WorkflowNode).where(WorkflowNode.id == uuid.UUID(node_id))
+    )
+    node = result.scalar_one_or_none()
+    if node is None:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    # Save file
+    dest_dir = os.path.join(UPLOAD_DIR, "workflow-docs", node_id)
+    os.makedirs(dest_dir, exist_ok=True)
+    safe_name = f"{uuid.uuid4()}_{file.filename}"
+    dest_path = os.path.join(dest_dir, safe_name)
+    contents = await file.read()
+    if len(contents) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File quá lớn (tối đa 20MB)")
+    with open(dest_path, "wb") as f:
+        f.write(contents)
+
+    relative_path = os.path.join("workflow-docs", node_id, safe_name)
+    doc = WorkflowNodeDocument(
+        node_id=uuid.UUID(node_id),
+        ten_tai_lieu=ten_tai_lieu,
+        file_path=relative_path,
+        uploaded_by=current_user.id,
+    )
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+    return {
+        "id": str(doc.id),
+        "ten_tai_lieu": doc.ten_tai_lieu,
+        "url": f"/uploads/{doc.file_path}",
+        "uploaded_at": doc.uploaded_at.isoformat(),
+    }
+
+
+@router.delete("/nodes/{node_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_node_document(
+    node_id: str,
+    doc_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles(RoleEnum.admin)),
+):
+    result = await db.execute(
+        select(WorkflowNodeDocument).where(
+            WorkflowNodeDocument.id == uuid.UUID(doc_id),
+            WorkflowNodeDocument.node_id == uuid.UUID(node_id),
+        )
+    )
+    doc = result.scalar_one_or_none()
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+    # Remove file from disk (best effort)
+    try:
+        full_path = os.path.join(UPLOAD_DIR, doc.file_path)
+        if os.path.exists(full_path):
+            os.remove(full_path)
+    except OSError:
+        pass
+    await db.delete(doc)
     await db.commit()
 
 

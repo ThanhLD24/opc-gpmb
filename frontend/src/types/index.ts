@@ -11,6 +11,20 @@ export interface User {
   role: Role
 }
 
+export interface WorkflowNodeDocument {
+  id: string
+  ten_tai_lieu: string
+  url: string
+  uploaded_at: string
+}
+
+export interface TaskAttachment {
+  id: string
+  ten_tai_lieu: string
+  url: string
+  uploaded_at: string
+}
+
 export interface WorkflowNode {
   id: string
   parent_id: string | null
@@ -30,6 +44,7 @@ export interface WorkflowNode {
   is_milestone: boolean
   legal_basis: string | null
   org_in_charge: string | null
+  documents?: WorkflowNodeDocument[]
   children?: WorkflowNode[]
 }
 
@@ -87,6 +102,8 @@ export interface TaskInstance {
   field_gia_tri_duyet: boolean
   field_ghi_chu: boolean
   require_scan: boolean
+  node_documents?: WorkflowNodeDocument[]
+  attachments?: TaskAttachment[]
   children?: TaskInstance[]
 }
 
