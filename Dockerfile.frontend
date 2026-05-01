@@ -2,7 +2,7 @@
 # Next.js 14 + TypeScript + Ant Design
 # Multi-stage build: build → production runtime
 
-FROM node:18-alpine as builder
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
@@ -18,22 +18,22 @@ RUN npm run build
 
 FROM node:18-alpine
 
-RUN addgroup -g 1000 appuser && \
-    adduser -D -u 1000 -G appuser appuser
+# node:18-alpine already ships with user "node" (uid=1000, gid=1000)
+# Do NOT run addgroup/adduser — it will fail with "gid 1000 in use"
 
 WORKDIR /app
 
-# Copy built application from builder
-COPY --from=builder --chown=appuser:appuser /app/.next ./.next
-COPY --from=builder --chown=appuser:appuser /app/public ./public
-COPY --from=builder --chown=appuser:appuser /app/node_modules ./node_modules
-COPY --from=builder --chown=appuser:appuser /app/package*.json ./
+# Copy built application from builder, owned by the built-in "node" user
+COPY --from=builder --chown=node:node /app/.next ./.next
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/package*.json ./
 
 ENV NODE_ENV=production \
-    NEXT_PUBLIC_API_URL=http://localhost:8000 \
+    NEXT_PUBLIC_API_URL=http://localhost:38081 \
     PORT=3000
 
-USER appuser
+USER node
 
 EXPOSE 3000
 
