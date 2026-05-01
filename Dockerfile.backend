@@ -31,7 +31,7 @@ COPY --from=builder /root/.local /home/appuser/.local
 
 # Copy application code
 COPY backend/app ./app
-COPY backend/main.py .
+COPY backend/app/main.py .
 COPY backend/.env.example .env.example
 
 # Create uploads directory
