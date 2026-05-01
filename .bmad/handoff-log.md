@@ -1,5 +1,25 @@
 # BMAD Handoff Log — OPC GPMB
 
+## Entry 018 — 2026-05-01
+**From:** BMAD Orchestrator (post-demo hotfixes)
+**To:** Continuous improvement
+**Artifacts:** Multiple bug fixes and UX improvements
+**Status:** ✅ COMPLETE — 5 issues resolved, all committed
+
+### Summary
+- **BUG-QT-001** (FIXED): `addChildMutation` thiếu `template_id`+`level` → 422; non-admin form guard missing
+- **BUG-CV-001** (FIXED): Task list không hiển thị hộ cho per_household nodes — added `Ho` JOIN + "Hộ" column
+- **Hydration error** (FIXED): `getCurrentUser()` called in render body → created `useCurrentUser()` hook, applied to 7 components
+- **Feature: Task processing in /cong-viec** (ADDED): CBCQ can now click tasks → open TaskDetail drawer
+- **Feature: Active workflow display in hồ sơ form** (ADDED): Show active template name before creating hồ sơ
+- Git initialized, initial commit made (134 files), all subsequent fixes committed
+
+### Open items
+- Vấn đề 2 (workflow selection): design decision confirmed — single active workflow only. No feature request filed yet.
+- Post-demo sprint 8 scope: not yet defined
+
+---
+
 ## Entry 017 — 2026-05-01
 **From:** Tech Lead
 **To:** Demo / Product Owner sign-off
