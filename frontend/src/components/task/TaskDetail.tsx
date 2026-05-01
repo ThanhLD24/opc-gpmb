@@ -28,6 +28,8 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
   const [form] = Form.useForm()
 
   const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'cbcq'
+  const canFillFinance = currentUser?.role === 'ke_toan'
+  const canSave = canEdit || canFillFinance
   const isLeaf = task?.is_leaf || false
 
   useEffect(() => {
@@ -115,13 +117,24 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
       onClose={onClose}
       width={480}
       footer={
-        canEdit && hasAnyField ? (
+        canSave && hasAnyField ? (
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <Button onClick={onClose}>Đóng</Button>
             <Button
               type="primary"
               onClick={() => {
-                form.validateFields().then(values => fieldsMutation.mutate(values))
+                form.validateFields().then(values => {
+                  // ke_toan chỉ submit finance fields
+                  if (canFillFinance && !canEdit) {
+                    fieldsMutation.mutate({
+                      gia_tri_trinh: values.gia_tri_trinh ?? null,
+                      gia_tri_duyet: values.gia_tri_duyet ?? null,
+                      ghi_chu: values.ghi_chu ?? null,
+                    })
+                  } else {
+                    fieldsMutation.mutate(values)
+                  }
+                })
               }}
               loading={fieldsMutation.isPending}
             >
@@ -195,7 +208,7 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
             <Form.Item name="gia_tri_trinh" label="Giá trị trình (VND)">
               <InputNumber
                 style={{ width: '100%' }}
-                disabled={!canEdit}
+                disabled={!canSave}
                 formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
                 parser={(v) => Number(v!.replace(/\./g, '')) as 0}
                 min={0}
@@ -206,7 +219,7 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
             <Form.Item name="gia_tri_duyet" label="Giá trị duyệt (VND)">
               <InputNumber
                 style={{ width: '100%' }}
-                disabled={!canEdit}
+                disabled={!canSave}
                 formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
                 parser={(v) => Number(v!.replace(/\./g, '')) as 0}
                 min={0}
@@ -215,7 +228,7 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
           )}
           {task.field_ghi_chu && (
             <Form.Item name="ghi_chu" label="Ghi chú">
-              <Input.TextArea rows={3} disabled={!canEdit} />
+              <Input.TextArea rows={3} disabled={!canSave} />
             </Form.Item>
           )}
         </Form>
@@ -231,7 +244,7 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
               <a href={task.file_scan_url} target="_blank" rel="noreferrer">
                 <Button icon={<DownloadOutlined />} size="small">Tải xuống</Button>
               </a>
-              {canEdit && (
+              {canSave && (
                 <Upload
                   showUploadList={false}
                   beforeUpload={(file) => {
@@ -245,7 +258,7 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
                 </Upload>
               )}
             </Space>
-          ) : canEdit ? (
+          ) : canSave ? (
             <Upload
               showUploadList={false}
               beforeUpload={(file) => {
