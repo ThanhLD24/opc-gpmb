@@ -189,6 +189,13 @@ async def update_task_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # [SECURITY] Only admin/cbcq can change task completion status
+    if current_user.role not in (RoleEnum.admin, RoleEnum.cbcq):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ admin hoặc CBCQ mới được cập nhật trạng thái công việc",
+        )
+
     result = await db.execute(
         select(TaskInstance).where(
             TaskInstance.id == uuid.UUID(task_id),
@@ -229,6 +236,16 @@ async def update_task_fields(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # [SECURITY] ke_toan can only update financial fields
+    is_ke_toan = current_user.role == RoleEnum.ke_toan
+    can_edit_all = current_user.role in (RoleEnum.admin, RoleEnum.cbcq)
+
+    if not can_edit_all and not is_ke_toan:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Không có quyền cập nhật thông tin công việc",
+        )
+
     result = await db.execute(
         select(TaskInstance).where(
             TaskInstance.id == uuid.UUID(task_id),
@@ -239,15 +256,19 @@ async def update_task_fields(
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    if body.so_vb is not None:
-        task.so_vb = body.so_vb
-    if body.ngay_vb is not None:
-        try:
-            task.ngay_vb = datetime.fromisoformat(body.ngay_vb)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid ngay_vb format")
-    if body.loai_vb is not None:
-        task.loai_vb = body.loai_vb
+    # Administrative fields — chỉ admin/cbcq
+    if can_edit_all:
+        if body.so_vb is not None:
+            task.so_vb = body.so_vb
+        if body.ngay_vb is not None:
+            try:
+                task.ngay_vb = datetime.fromisoformat(body.ngay_vb)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid ngay_vb format")
+        if body.loai_vb is not None:
+            task.loai_vb = body.loai_vb
+
+    # Finance fields — admin/cbcq + ke_toan đều cập nhật được
     if body.gia_tri_trinh is not None:
         task.gia_tri_trinh = body.gia_tri_trinh
     if body.gia_tri_duyet is not None:

@@ -36,9 +36,12 @@ async def list_tasks_global(
     """
     is_admin = current_user.role == RoleEnum.admin
     is_cbcq = current_user.role == RoleEnum.cbcq
+    is_ke_toan = current_user.role == RoleEnum.ke_toan
+    is_gddh = current_user.role == RoleEnum.gddh
 
-    # Validate filter requirement for non-admin, non-cbcq
-    if not is_admin and not is_cbcq and not my_tasks and ho_so_id is None:
+    # Chỉ yêu cầu filter cho role không có quyền xem toàn bộ
+    needs_filter = not is_admin and not is_cbcq and not is_ke_toan and not is_gddh
+    if needs_filter and not my_tasks and ho_so_id is None:
         raise HTTPException(
             status_code=400,
             detail="Vui lòng chọn hồ sơ GPMB để xem công việc",
@@ -46,12 +49,12 @@ async def list_tasks_global(
 
     conditions = [HoSoGPMB.deleted_at.is_(None)]
 
-    # UC-09: CBCQ is automatically scoped to their assigned hồ sơ
+    # UC-09: CBCQ auto-scoped to their assigned hồ sơ (always — không cần my_tasks)
     if is_cbcq:
         conditions.append(HoSoGPMB.cbcq_id == current_user.id)
 
-    if my_tasks:
-        conditions.append(HoSoGPMB.cbcq_id == current_user.id)
+    # my_tasks=true cho CBCQ = đã xử lý bởi auto-scope ở trên
+    # my_tasks=true cho ke_toan/gddh/admin = không thêm filter (họ thấy tất cả)
 
     if ho_so_id:
         try:
