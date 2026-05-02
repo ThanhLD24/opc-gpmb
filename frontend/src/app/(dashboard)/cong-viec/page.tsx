@@ -1,8 +1,9 @@
 'use client'
-import { Empty, notification, Select, Space, Spin, Table, Tabs, Tag, Typography } from 'antd'
+import { Empty, notification, Select, Space, Spin, Table, Tabs, Tag, Typography, Input } from 'antd'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, Suspense } from 'react'
 import type { ColumnsType } from 'antd/es/table'
+import { useSearchParams } from 'next/navigation'
 import api from '@/lib/api'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { formatDate } from '@/utils/format'
@@ -123,14 +124,17 @@ function buildColumns(page: number): ColumnsType<CongViecItem> {
 
 // ─── Tab 1: Tất cả công việc ──────────────────────────────────────────────────
 
-function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label: string }[] }) {
+function TatCaCongViecTabContent({ hoSoOptions }: { hoSoOptions: { value: string; label: string }[] }) {
+  const searchParams = useSearchParams()
   const [page, setPage] = useState(1)
-  const [hoSoId, setHoSoId] = useState<string | undefined>()
+  const [hoSoId, setHoSoId] = useState<string | undefined>(searchParams.get('ho_so_id') || undefined)
   const [trangThai, setTrangThai] = useState<string | undefined>()
   const [drawerTask, setDrawerTask] = useState<TaskInstance | null>(null)
   const [drawerHoSoId, setDrawerHoSoId] = useState<string>('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [fetchingTask, setFetchingTask] = useState(false)
+  const [maHo, setMaHo] = useState<string | undefined>(searchParams.get('ma_ho') || undefined)
+  const [tenChuHo, setTenChuHo] = useState<string | undefined>()
 
   const user = useCurrentUser()
   const isCbcq = user?.role === 'cbcq'
@@ -150,11 +154,13 @@ function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label
   }
 
   const { data, isLoading } = useQuery<TasksResponse>({
-    queryKey: ['tasks-all', page, hoSoId, trangThai],
+    queryKey: ['tasks-all', page, hoSoId, trangThai, maHo, tenChuHo],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), page_size: '20' })
       if (hoSoId) params.append('ho_so_id', hoSoId)
       if (trangThai) params.append('trang_thai', trangThai)
+      if (maHo) params.append('ma_ho', maHo)
+      if (tenChuHo) params.append('ten_chu_ho', tenChuHo)
       const res = await api.get(`/tasks?${params}`)
       return res.data
     },
@@ -195,6 +201,24 @@ function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label
             options={TASK_STATUS_OPTIONS}
             value={trangThai}
             onChange={(val) => { setTrangThai(val); setPage(1) }}
+            disabled={!hoSoId && !isCbcq}
+          />
+          <Input.Search
+            placeholder="Mã hộ"
+            allowClear
+            value={maHo}
+            onChange={(e) => setMaHo(e.target.value)}
+            onSearch={(val) => { setMaHo(val); setPage(1) }}
+            style={{ width: 150 }}
+            disabled={!hoSoId && !isCbcq}
+          />
+          <Input.Search
+            placeholder="Tên chủ hộ"
+            allowClear
+            value={tenChuHo}
+            onChange={(e) => setTenChuHo(e.target.value)}
+            onSearch={(val) => { setTenChuHo(val); setPage(1) }}
+            style={{ width: 200 }}
             disabled={!hoSoId && !isCbcq}
           />
         </Space>
@@ -239,14 +263,27 @@ function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label
   )
 }
 
+function TatCaCongViecTab({ hoSoOptions }: { hoSoOptions: { value: string; label: string }[] }) {
+  return (
+    <Suspense fallback={null}>
+      <TatCaCongViecTabContent hoSoOptions={hoSoOptions} />
+    </Suspense>
+  )
+}
+
 // ─── Tab 2: Việc của tôi ──────────────────────────────────────────────────────
 
-function ViecCuaToiTab() {
+function ViecCuaToiTabContent({ hoSoOptions }: { hoSoOptions: { value: string; label: string }[] }) {
+  const searchParams = useSearchParams()
   const [page, setPage] = useState(1)
+  const [hoSoId, setHoSoId] = useState<string | undefined>(searchParams.get('ho_so_id') || undefined)
+  const [trangThai, setTrangThai] = useState<string | undefined>()
   const [drawerTask, setDrawerTask] = useState<TaskInstance | null>(null)
   const [drawerHoSoId, setDrawerHoSoId] = useState<string>('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [fetchingTask, setFetchingTask] = useState(false)
+  const [maHo, setMaHo] = useState<string | undefined>(searchParams.get('ma_ho') || undefined)
+  const [tenChuHo, setTenChuHo] = useState<string | undefined>()
 
   const handleRowClick = async (record: CongViecItem) => {
     setFetchingTask(true)
@@ -263,9 +300,13 @@ function ViecCuaToiTab() {
   }
 
   const { data, isLoading } = useQuery<TasksResponse>({
-    queryKey: ['tasks-my', page],
+    queryKey: ['tasks-my', page, maHo, tenChuHo, hoSoId, trangThai],
     queryFn: async () => {
       const params = new URLSearchParams({ my_tasks: 'true', page: String(page), page_size: '20' })
+      if (hoSoId) params.append('ho_so_id', hoSoId)
+      if (trangThai) params.append('trang_thai', trangThai)
+      if (maHo) params.append('ma_ho', maHo)
+      if (tenChuHo) params.append('ten_chu_ho', tenChuHo)
       const res = await api.get(`/tasks?${params}`)
       return res.data
     },
@@ -274,7 +315,56 @@ function ViecCuaToiTab() {
   const columns = buildColumns(page)
 
   return (
-    <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #F0E8E8' }}>
+    <div>
+      <div
+        style={{
+          background: '#fff',
+          padding: '12px 16px',
+          borderRadius: 8,
+          marginBottom: 16,
+          border: '1px solid #F0E8E8',
+        }}
+      >
+        <Space wrap>
+          <Select
+            placeholder="Chọn hồ sơ GPMB"
+            style={{ width: 300 }}
+            options={hoSoOptions}
+            value={hoSoId}
+            onChange={(val) => { setHoSoId(val); setPage(1) }}
+            allowClear
+            showSearch
+            filterOption={(input, option) =>
+              String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+          />
+          <Select
+            allowClear
+            placeholder="Tất cả trạng thái"
+            style={{ width: 180 }}
+            options={TASK_STATUS_OPTIONS}
+            value={trangThai}
+            onChange={(val) => { setTrangThai(val); setPage(1) }}
+          />
+          <Input.Search
+            placeholder="Mã hộ"
+            allowClear
+            value={maHo}
+            onChange={(e) => setMaHo(e.target.value)}
+            onSearch={(val) => { setMaHo(val); setPage(1) }}
+            style={{ width: 150 }}
+          />
+          <Input.Search
+            placeholder="Tên chủ hộ"
+            allowClear
+            value={tenChuHo}
+            onChange={(e) => setTenChuHo(e.target.value)}
+            onSearch={(val) => { setTenChuHo(val); setPage(1) }}
+            style={{ width: 200 }}
+          />
+        </Space>
+      </div>
+      <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #F0E8E8' }}>
       {isLoading ? (
         <div style={{ padding: 48, textAlign: 'center' }}>
           <Spin />
@@ -308,7 +398,16 @@ function ViecCuaToiTab() {
         open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setDrawerTask(null) }}
       />
+      </div>
     </div>
+  )
+}
+
+function ViecCuaToiTab({ hoSoOptions }: { hoSoOptions: { value: string; label: string }[] }) {
+  return (
+    <Suspense fallback={null}>
+      <ViecCuaToiTabContent hoSoOptions={hoSoOptions} />
+    </Suspense>
   )
 }
 
@@ -340,7 +439,7 @@ export default function CongViecPage() {
     {
       key: 'viec-cua-toi',
       label: 'Việc của tôi',
-      children: <ViecCuaToiTab />,
+      children: <ViecCuaToiTab hoSoOptions={hoSoOptions} />,
     },
   ]
 

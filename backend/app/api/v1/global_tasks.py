@@ -23,6 +23,8 @@ TASK_STATUS_LABELS: dict[str, str] = {
 async def list_tasks_global(
     ho_so_id: Optional[str] = Query(None),
     trang_thai: Optional[str] = Query(None),
+    ma_ho: Optional[str] = Query(None),
+    ten_chu_ho: Optional[str] = Query(None),
     my_tasks: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -71,6 +73,11 @@ async def list_tasks_global(
                 detail=f"Invalid trang_thai: {trang_thai}. "
                        f"Valid values: {[e.value for e in TaskStatusEnum]}",
             )
+
+    if ma_ho:
+        conditions.append(Ho.ma_ho.ilike(f"%{ma_ho}%"))
+    if ten_chu_ho:
+        conditions.append(Ho.ten_chu_ho.ilike(f"%{ten_chu_ho}%"))
 
     # Base JOIN: TaskInstance → HoSoWorkflowNode (name) → HoSoGPMB → User (cbcq)
     base_join = (

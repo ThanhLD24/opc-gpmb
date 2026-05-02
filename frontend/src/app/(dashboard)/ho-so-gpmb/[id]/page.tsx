@@ -10,8 +10,9 @@ import {
   SendOutlined, KeyOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useParams, useRouter, usePathname, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import type { ColumnsType } from 'antd/es/table'
 import api from '@/lib/api'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
@@ -471,14 +472,22 @@ function PivotTab({ hoSoId }: { hoSoId: string }) {
       key: 'ma_ho',
       width: 100,
       fixed: 'left',
-      render: (_: unknown, record: PivotRow) => record.ho.ma_ho,
+      render: (_: unknown, record: PivotRow) => (
+        <Link href={`/cong-viec?ho_so_id=${hoSoId}&ma_ho=${record.ho.ma_ho}`}>
+          {record.ho.ma_ho}
+        </Link>
+      ),
     },
     {
       title: 'Tên chủ hộ',
       key: 'ten_chu_ho',
       width: 160,
       fixed: 'left',
-      render: (_: unknown, record: PivotRow) => record.ho.ten_chu_ho,
+      render: (_: unknown, record: PivotRow) => (
+        <Link href={`/cong-viec?ho_so_id=${hoSoId}&ma_ho=${record.ho.ma_ho}`}>
+          {record.ho.ten_chu_ho}
+        </Link>
+      ),
     },
   ]
 
@@ -825,9 +834,22 @@ function ChiTraTab({ hoSoId }: { hoSoId: string }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function HoSoDetailPage() {
+function HoSoDetailPageContent() {
   const params = useParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const id = params.id as string
+
+  const tab = searchParams.get('tab') || '1'
+
+  const handleTabChange = (key: string) => {
+    const newParams = new URLSearchParams(searchParams.toString())
+    newParams.set('tab', key)
+    // Use replace to avoid filling history with tab changes, or push if history is desired.
+    // Push is better if the user wants "Back" to go to the previous tab.
+    router.replace(`${pathname}?${newParams.toString()}`)
+  }
 
   const { data: hoSo, isLoading, refetch } = useQuery<HoSo>({
     queryKey: ['ho-so', id],
@@ -848,7 +870,8 @@ export default function HoSoDetailPage() {
         </Title>
       </div>
       <Tabs
-        defaultActiveKey="1"
+        activeKey={tab}
+        onChange={handleTabChange}
         type="card"
         items={[
           {
@@ -884,5 +907,13 @@ export default function HoSoDetailPage() {
         ]}
       />
     </div>
+  )
+}
+
+export default function HoSoDetailPage() {
+  return (
+    <Suspense fallback={<Spin style={{ display: 'block', margin: '80px auto' }} />}>
+      <HoSoDetailPageContent />
+    </Suspense>
   )
 }
