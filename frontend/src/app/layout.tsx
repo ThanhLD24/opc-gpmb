@@ -14,10 +14,10 @@ const agribankTheme = {
   },
   components: {
     Menu: {
-      itemSelectedBg: '#F5E6E9',
-      itemSelectedColor: '#9B1B30',
+      itemSelectedBg: '#b01e46',
+      itemSelectedColor: '#FFFFFF',
       itemHoverBg: '#FBF1F1',
-      itemHoverColor: '#9B1B30',
+      itemHoverColor: '#b01e46',
     },
     Button: {
       colorPrimary: '#9B1B30',

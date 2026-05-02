@@ -107,11 +107,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.replace('/login')
   }
 
+  const getActiveKey = () => {
+    if (!pathname) return ''
+    if (pathname === '/') return '/dashboard'
+    const routeKeys = ['/dashboard', '/ho-so-gpmb', '/ho-dan', '/cong-viec', '/phe-duyet', '/quy-trinh', '/ke-hoach-thang', '/bao-cao']
+    const match = routeKeys.find(key => pathname.startsWith(key))
+    return match || pathname
+  }
+  const activeKey = getActiveKey()
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#f7f0f0' }}>
       <Sider
         width={240}
-        theme="light"
         style={{
           position: 'fixed',
           height: '100vh',
@@ -155,9 +163,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Navigation menu */}
         <Menu
-          theme="light"
           mode="inline"
-          selectedKeys={[pathname || '']}
+          selectedKeys={[activeKey]}
           items={menuItems}
           onClick={({ key }) => router.push(key)}
           style={{
