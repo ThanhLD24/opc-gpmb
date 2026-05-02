@@ -349,32 +349,34 @@ export default function QuyTrinhDetailPage() {
               Chưa có bước nào.{isAdmin && ' Nhấn "Thêm bước gốc" để bắt đầu.'}
             </div>
           ) : (
-            <Tree
-              treeData={treeData}
-              defaultExpandAll
-              selectedKeys={selectedNode ? [selectedNode.id] : []}
-              onSelect={(keys, info) => {
-                if (keys.length > 0) {
-                  const raw = (info.node as unknown as { raw: WorkflowNode }).raw
-                  setSelectedNode(raw)
-                  form.setFieldsValue({
-                    name: raw.name,
-                    code: raw.code,
-                    planned_days: raw.planned_days,
-                    per_household: raw.per_household,
-                    field_so_vb: raw.field_so_vb,
-                    field_ngay_vb: raw.field_ngay_vb,
-                    field_loai_vb: raw.field_loai_vb,
-                    field_gia_tri_trinh: raw.field_gia_tri_trinh,
-                    field_gia_tri_duyet: raw.field_gia_tri_duyet,
-                    field_ghi_chu: raw.field_ghi_chu,
-                    require_scan: raw.require_scan,
-                    legal_basis: raw.legal_basis,
-                    org_in_charge: raw.org_in_charge,
-                  })
-                }
-              }}
-            />
+            <div style={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', overflowX: 'hidden' }}>
+              <Tree
+                treeData={treeData}
+                defaultExpandAll
+                selectedKeys={selectedNode ? [selectedNode.id] : []}
+                onSelect={(keys, info) => {
+                  if (keys.length > 0) {
+                    const raw = (info.node as unknown as { raw: WorkflowNode }).raw
+                    setSelectedNode(raw)
+                    form.setFieldsValue({
+                      name: raw.name,
+                      code: raw.code,
+                      planned_days: raw.planned_days,
+                      per_household: raw.per_household,
+                      field_so_vb: raw.field_so_vb,
+                      field_ngay_vb: raw.field_ngay_vb,
+                      field_loai_vb: raw.field_loai_vb,
+                      field_gia_tri_trinh: raw.field_gia_tri_trinh,
+                      field_gia_tri_duyet: raw.field_gia_tri_duyet,
+                      field_ghi_chu: raw.field_ghi_chu,
+                      require_scan: raw.require_scan,
+                      legal_basis: raw.legal_basis,
+                      org_in_charge: raw.org_in_charge,
+                    })
+                  }
+                }}
+              />
+            </div>
           )}
         </Card>
 
