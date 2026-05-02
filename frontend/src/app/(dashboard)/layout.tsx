@@ -107,20 +107,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.replace('/login')
   }
 
-  const avatarMenuItems = [
-    {
-      key: 'change-pwd',
-      icon: <KeyOutlined />,
-      label: 'Đổi mật khẩu',
-    },
-  ]
-
-  const handleAvatarMenuClick = ({ key }: { key: string }) => {
-    if (key === 'change-pwd') {
-      setChangePasswordOpen(true)
-    }
-  }
-
   return (
     <Layout style={{ minHeight: '100vh', background: '#FBF1F1' }}>
       <Sider
@@ -177,23 +163,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{
             marginTop: 8,
             border: 'none',
-            flex: 1,
+            paddingBottom: 68,
           }}
         />
 
-        {/* Bottom user section */}
+        {/* Profile section — pinned to viewport bottom via absolute positioning */}
         <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
           padding: '12px 16px',
           borderTop: '1px solid #F0E8E8',
+          background: '#FFFFFF',
           display: 'flex',
           alignItems: 'center',
           gap: 10,
         }}>
-          <Avatar
-            icon={<UserOutlined />}
-            style={{ background: '#9B1B30', flexShrink: 0 }}
-            size={36}
-          />
+          <Dropdown
+            menu={{
+              items: [{
+                key: 'change-pwd',
+                icon: <KeyOutlined />,
+                label: 'Đổi mật khẩu',
+              }],
+              onClick: ({ key }) => {
+                if (key === 'change-pwd') setChangePasswordOpen(true)
+              },
+            }}
+            trigger={['click']}
+            placement="topLeft"
+          >
+            <Avatar
+              icon={<UserOutlined />}
+              style={{ background: '#9B1B30', flexShrink: 0, cursor: 'pointer' }}
+              size={36}
+            />
+          </Dropdown>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 13, color: '#1A1A1A', lineHeight: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user?.full_name || '—'}
@@ -240,20 +246,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <BellOutlined style={{ fontSize: 20, color: '#6B6B6B', cursor: 'pointer' }} />
             </Badge>
           </Popover>
-
-          <Dropdown
-            menu={{
-              items: avatarMenuItems,
-              onClick: handleAvatarMenuClick,
-            }}
-            trigger={['click']}
-            placement="bottomRight"
-          >
-            <Avatar
-              icon={<UserOutlined />}
-              style={{ background: '#9B1B30', cursor: 'pointer' }}
-            />
-          </Dropdown>
         </Header>
         <Content style={{ padding: 24, background: '#FBF1F1' }}>
           {children}

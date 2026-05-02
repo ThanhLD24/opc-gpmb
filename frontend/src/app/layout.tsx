@@ -23,7 +23,7 @@ const agribankTheme = {
       colorPrimary: '#9B1B30',
     },
     Table: {
-      headerBg: '#FBF1F1',
+      headerBg: '#FFFFFF',
     },
   },
 }
