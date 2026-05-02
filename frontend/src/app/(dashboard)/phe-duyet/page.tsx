@@ -452,7 +452,7 @@ function LichSuTab() {
 
 export default function PheDuyetPage() {
   const router = useRouter()
-  const [user, setUser] = useState(getCurrentUser())
+  const [user, setUser] = useState<ReturnType<typeof getCurrentUser>>(null)
 
   useEffect(() => {
     const u = getCurrentUser()

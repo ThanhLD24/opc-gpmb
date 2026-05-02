@@ -27,6 +27,7 @@ async def list_ho_global(
     ho_so_id: Optional[str] = Query(None),
     trang_thai: Optional[str] = Query(None),
     cbcq_id: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -60,6 +61,9 @@ async def list_ho_global(
             conditions.append(HoSoGPMB.cbcq_id == uuid.UUID(cbcq_id))
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid cbcq_id UUID")
+
+    if search:
+        conditions.append(Ho.ten_chu_ho.ilike(f"%{search}%"))
 
     # Count
     count_q = (

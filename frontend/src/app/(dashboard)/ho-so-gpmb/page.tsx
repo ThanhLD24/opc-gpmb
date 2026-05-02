@@ -34,15 +34,11 @@ export default function HoSoListPage() {
     setCurrentUser(getCurrentUser())
   }, [])
 
-  const { data: activeTemplate } = useQuery<{ id: string; name: string } | null>({
-    queryKey: ['workflow-template-info'],
+  const { data: templateList } = useQuery<{ id: string; name: string; is_active: boolean }[]>({
+    queryKey: ['workflow-templates-list'],
     queryFn: async () => {
-      try {
-        const res = await api.get('/workflow/template')
-        return { id: res.data.id, name: res.data.name }
-      } catch {
-        return null
-      }
+      const res = await api.get('/workflow/templates')
+      return res.data
     },
     staleTime: 300_000,
   })
@@ -271,20 +267,15 @@ export default function HoSoListPage() {
               <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="DD/MM/YYYY" />
             </Form.Item>
           </div>
-          <div style={{
-            background: '#f6f0f0',
-            border: '1px solid #f0e0e0',
-            borderRadius: 6,
-            padding: '10px 14px',
-            marginBottom: 16,
-            fontSize: 13,
-          }}>
-            <span style={{ color: '#666' }}>Quy trình áp dụng: </span>
-            {activeTemplate
-              ? <span style={{ fontWeight: 600, color: '#9B1B30' }}>{activeTemplate.name}</span>
-              : <span style={{ color: '#999', fontStyle: 'italic' }}>Chưa có quy trình nào được kích hoạt</span>
-            }
-          </div>
+          <Form.Item name="template_id" label="Quy trình áp dụng">
+            <Select
+              placeholder="Chọn quy trình đang kích hoạt"
+              allowClear
+              options={(templateList ?? [])
+                .filter(t => t.is_active)
+                .map(t => ({ value: t.id, label: t.name }))}
+            />
+          </Form.Item>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <Button onClick={() => { setModalOpen(false); form.resetFields() }}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={createMutation.isPending}>Tạo hồ sơ</Button>

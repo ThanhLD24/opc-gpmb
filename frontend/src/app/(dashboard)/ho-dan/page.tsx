@@ -1,5 +1,5 @@
 'use client'
-import { Select, Space, Table, Tag, Typography } from 'antd'
+import { Input, Select, Space, Table, Tag, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -65,6 +65,7 @@ export default function HoDanPage() {
   const [hoSoId, setHoSoId] = useState<string | undefined>()
   const [trangThai, setTrangThai] = useState<string | undefined>()
   const [cbcqId, setCbcqId] = useState<string | undefined>()
+  const [search, setSearch] = useState('')
 
   // Load hồ sơ list for filter selects
   const { data: hoSoList } = useQuery<HoSoOption[]>({
@@ -98,12 +99,13 @@ export default function HoDanPage() {
 
   // Main data query
   const { data, isLoading } = useQuery<HoDanResponse>({
-    queryKey: ['ho-dan', page, hoSoId, trangThai, cbcqId],
+    queryKey: ['ho-dan', page, hoSoId, trangThai, cbcqId, search],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), page_size: '20' })
       if (hoSoId) params.append('ho_so_id', hoSoId)
       if (trangThai) params.append('trang_thai', trangThai)
       if (cbcqId) params.append('cbcq_id', cbcqId)
+      if (search) params.append('search', search)
       const res = await api.get(`/ho?${params}`)
       return res.data
     },
@@ -228,6 +230,22 @@ export default function HoDanPage() {
               }
             />
           )}
+          <Input.Search
+            placeholder="Tìm theo tên chủ hộ"
+            allowClear
+            style={{ width: 240 }}
+            value={search}
+            onChange={(e) => {
+              if (!e.target.value) {
+                setSearch('')
+                setPage(1)
+              }
+            }}
+            onSearch={(val) => {
+              setSearch(val)
+              setPage(1)
+            }}
+          />
         </Space>
       </div>
 

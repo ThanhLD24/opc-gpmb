@@ -4,6 +4,7 @@ import {
   FileTextOutlined, ApartmentOutlined, LogoutOutlined, UserOutlined,
   BellOutlined, DashboardOutlined, BarChartOutlined,
   TeamOutlined, CheckSquareOutlined, KeyOutlined, CheckCircleOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -89,6 +90,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       icon: <ApartmentOutlined />,
       label: 'Quy trình GPMB',
     }] : []),
+    ...(user?.role === 'cbcq' || user?.role === 'admin' ? [{
+      key: '/ke-hoach-thang',
+      icon: <CalendarOutlined />,
+      label: 'Kế hoạch tháng',
+    }] : []),
     {
       key: '/bao-cao',
       icon: <BarChartOutlined />,
@@ -156,7 +162,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             AG
           </div>
           <div>
-            <div style={{ color: '#9B1B30', fontWeight: 700, fontSize: 15, lineHeight: '18px' }}>AGRIBANK</div>
+            <div style={{ color: '#9B1B30', fontWeight: 700, fontSize: 15, lineHeight: '18px' }}>OPC</div>
             <div style={{ color: '#6B6B6B', fontSize: 11, lineHeight: '14px' }}>Hệ thống GPMB</div>
           </div>
         </div>

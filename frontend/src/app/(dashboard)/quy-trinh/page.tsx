@@ -1,7 +1,7 @@
 'use client'
 import {
   Button, Table, Tag, Typography, Space, Popconfirm, Modal, Form, Input,
-  notification, Spin, Badge,
+  notification, Spin,
 } from 'antd'
 import {
   PlusOutlined, EyeOutlined, CheckCircleOutlined, DeleteOutlined,
@@ -107,7 +107,7 @@ export default function QuyTrinhListPage() {
       align: 'center',
       render: (_: unknown, record: TemplateRow) =>
         record.is_active ? (
-          <Badge status="success" text={<Tag color="green">Đang hoạt động</Tag>} />
+          <Tag color="green">Đang hoạt động</Tag>
         ) : (
           <Tag color="default">Không hoạt động</Tag>
         ),

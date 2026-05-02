@@ -704,6 +704,58 @@ async def import_workflow_excel(
     return {"imported": inserted + updated, "skipped": upsert_errors}
 
 
+# GET /workflow/import-template
+@router.get("/import-template")
+async def download_import_template(
+    current_user: User = Depends(get_current_user),
+):
+    """Download blank Excel template for workflow import."""
+    from openpyxl.styles import PatternFill, Alignment
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Quy trinh"
+
+    # Header row
+    headers = ["STT", "Mã bước", "Tên bước", "Parent code", "Thời gian (ngày)"]
+    ws.append(headers)
+
+    # Style header
+    header_fill = PatternFill(start_color="9B1B30", end_color="9B1B30", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+
+    # Sample data rows
+    samples = [
+        (1, "B1", "Thông báo thu hồi đất", None, 30),
+        (2, "B1.1", "Lập phương án bồi thường", "B1", 15),
+        (3, "B1.2", "Niêm yết phương án", "B1", 5),
+        (4, "B2", "Chi trả bồi thường", None, 20),
+    ]
+    for row in samples:
+        ws.append(list(row))
+
+    # Column widths
+    ws.column_dimensions["A"].width = 6
+    ws.column_dimensions["B"].width = 14
+    ws.column_dimensions["C"].width = 40
+    ws.column_dimensions["D"].width = 14
+    ws.column_dimensions["E"].width = 18
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="mau-import-quy-trinh.xlsx"'},
+    )
+
+
 # S2-BE-06 — GET /workflow/export-excel
 @router.get("/export-excel")
 async def export_workflow_excel(

@@ -1,6 +1,6 @@
 'use client'
 import { Modal, Upload, Button, Table, Tag, notification, Spin, Alert } from 'antd'
-import { UploadOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { UploadOutlined, CheckCircleOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import type { RcFile } from 'antd/es/upload'
 import type { ColumnsType } from 'antd/es/table'
@@ -83,6 +83,20 @@ export default function ImportQuyTrinhModal({ open, onClose, onSuccess }: Props)
     }
   }
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await api.get('/workflow/import-template', { responseType: 'blob' })
+      const url = URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'mau-import-quy-trinh.xlsx'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      notification.error({ message: 'Không tải được mẫu' })
+    }
+  }
+
   const handleClose = () => {
     setPreview(null)
     setLastFile(null)
@@ -123,6 +137,12 @@ export default function ImportQuyTrinhModal({ open, onClose, onSuccess }: Props)
       footer={null}
       width={820}
     >
+      <div style={{ marginBottom: 12 }}>
+        <Button icon={<DownloadOutlined />} size="small" onClick={handleDownloadTemplate}>
+          Tải xuống mẫu Excel
+        </Button>
+      </div>
+
       <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         <Upload
           accept=".xlsx,.xls"

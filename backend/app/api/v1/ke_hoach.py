@@ -201,26 +201,29 @@ async def generate_ke_hoach(
             detail=f"Ke hoach thang {body.thang}/{body.nam} da ton tai cho ho so nay",
         )
 
-    # Pull task_instances with status != hoan_thanh, join workflow_node for ordering
-    task_q = (
-        select(TaskInstance)
-        .options(selectinload(TaskInstance.workflow_node))
+    # Get DISTINCT workflow nodes that have at least one non-completed task instance
+    # (1 item per node, not per task instance — avoids explosion for large ho-so)
+    node_id_q = (
+        select(TaskInstance.workflow_node_id)
         .where(
             TaskInstance.ho_so_id == uuid.UUID(ho_so_id),
             TaskInstance.status != TaskStatusEnum.hoan_thanh,
+            TaskInstance.workflow_node_id.isnot(None),
         )
+        .distinct()
     )
-    task_result = await db.execute(task_q)
-    tasks = task_result.scalars().all()
+    node_id_result = await db.execute(node_id_q)
+    node_ids = [row[0] for row in node_id_result.all()]
 
-    # Sort by workflow_node.level ASC, workflow_node.order ASC
-    tasks_sorted = sorted(
-        tasks,
-        key=lambda t: (
-            t.workflow_node.level if t.workflow_node else 999,
-            t.workflow_node.order if t.workflow_node else 999,
-        ),
-    )
+    nodes: list[HoSoWorkflowNode] = []
+    if node_ids:
+        nodes_q = (
+            select(HoSoWorkflowNode)
+            .where(HoSoWorkflowNode.id.in_(node_ids))
+            .order_by(HoSoWorkflowNode.level.asc(), HoSoWorkflowNode.order.asc())
+        )
+        nodes_result = await db.execute(nodes_q)
+        nodes = list(nodes_result.scalars().all())
 
     # Create ke_hoach_thang record
     ke_hoach = KeHoachThang(
@@ -233,13 +236,12 @@ async def generate_ke_hoach(
     db.add(ke_hoach)
     await db.flush()  # get ke_hoach.id
 
-    # Bulk insert items
-    for idx, task in enumerate(tasks_sorted):
-        node_name = task.workflow_node.name if task.workflow_node else "Công việc không xác định"
+    # Bulk insert items — 1 item per distinct workflow node
+    for idx, node in enumerate(nodes):
         item = KeHoachThangItem(
             ke_hoach_thang_id=ke_hoach.id,
-            task_instance_id=task.id,
-            ten_cong_viec=node_name,
+            task_instance_id=None,
+            ten_cong_viec=node.name,
             la_viec_phat_sinh=False,
             thu_tu=idx,
         )
@@ -293,11 +295,6 @@ async def update_ke_hoach_item(
     if body.ghi_chu is not None:
         item.ghi_chu = body.ghi_chu
     if body.da_hoan_thanh is not None:
-        if not item.la_viec_phat_sinh:
-            raise HTTPException(
-                status_code=400,
-                detail="Chỉ có thể cập nhật trạng thái cho việc phát sinh, không phải công việc quy trình",
-            )
         item.da_hoan_thanh = body.da_hoan_thanh
 
     await db.commit()

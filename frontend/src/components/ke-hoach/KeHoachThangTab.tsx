@@ -71,6 +71,7 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
   const {
     data: keHoachList,
     isLoading,
+    isError,
     refetch,
   } = useQuery<KeHoachThang[]>({
     queryKey: ['ke-hoach', hoSoId, thang, nam],
@@ -78,6 +79,7 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
       const res = await api.get(`/ho-so/${hoSoId}/ke-hoach?thang=${thang}&nam=${nam}`)
       return res.data
     },
+    retry: 1,
   })
 
   const keHoach = keHoachList && keHoachList.length > 0 ? keHoachList[0] : null
@@ -234,17 +236,16 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
       title: 'Trạng thái',
       key: 'trang_thai',
       width: 140,
-      render: (_: unknown, record: KeHoachThangItem) =>
-        record.la_viec_phat_sinh ? (
-          <Switch
-            size="small"
-            checked={record.da_hoan_thanh}
-            checkedChildren="Hoàn thành"
-            unCheckedChildren="Đang thực hiện"
-            disabled={!canEdit}
-            onChange={(checked) => patchItem(record.id, { da_hoan_thanh: checked })}
-          />
-        ) : null,
+      render: (_: unknown, record: KeHoachThangItem) => (
+        <Switch
+          size="small"
+          checked={record.da_hoan_thanh}
+          checkedChildren="Hoàn thành"
+          unCheckedChildren="Đang thực hiện"
+          disabled={!canEdit}
+          onChange={(checked) => patchItem(record.id, { da_hoan_thanh: checked })}
+        />
+      ),
     },
     {
       title: 'Ngày dự kiến',
@@ -367,6 +368,14 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
       {/* Content */}
       {isLoading ? (
         <Spin style={{ display: 'block', margin: '40px auto' }} />
+      ) : isError ? (
+        <Alert
+          type="error"
+          message="Không tải được kế hoạch tháng"
+          description="Vui lòng thử lại hoặc liên hệ quản trị viên."
+          showIcon
+          action={<Button size="small" onClick={() => refetch()}>Thử lại</Button>}
+        />
       ) : !keHoach ? (
         <Empty description={`Chưa có kế hoạch tháng ${thang}/${nam}`}>
           {canEdit && (
@@ -397,7 +406,7 @@ export default function KeHoachThangTab({ hoSoId }: Props) {
               columns={columns}
               dataSource={keHoach.items}
               rowKey="id"
-              pagination={false}
+              pagination={keHoach.items.length > 50 ? { pageSize: 50, showSizeChanger: false, showTotal: (t) => `Tổng ${t} mục` } : false}
               size="small"
               scroll={{ x: 700 }}
             />

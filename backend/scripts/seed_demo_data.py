@@ -53,9 +53,12 @@ from app.db.models import (  # noqa: E402
     HoSoChiTra,
     HoSoGPMB,
     HoSoStatusEnum,
+    HoSoWorkflowNode,
     HoStatusEnum,
     RoleEnum,
     User,
+    WorkflowNode,
+    WorkflowTemplate,
 )
 
 DB_URL_SYNC = os.environ.get(
@@ -118,18 +121,69 @@ def get_users(session: Session) -> Dict[str, User]:
     return by_username
 
 
+def _snapshot_workflow(
+    session: Session, ho_so_id: uuid.UUID, template_id: uuid.UUID
+) -> None:
+    nodes: List[WorkflowNode] = (
+        session.query(WorkflowNode)
+        .filter(WorkflowNode.template_id == template_id)
+        .order_by(WorkflowNode.level, WorkflowNode.order)
+        .all()
+    )
+    id_map: Dict[uuid.UUID, uuid.UUID] = {}
+    for node in nodes:
+        new_id = uuid.uuid4()
+        snap = HoSoWorkflowNode(
+            id=new_id,
+            ho_so_id=ho_so_id,
+            source_node_id=node.id,
+            parent_id=None,
+            code=node.code,
+            name=node.name,
+            level=node.level,
+            order=node.order,
+            planned_days=node.planned_days,
+            is_milestone=node.is_milestone,
+            legal_basis=node.legal_basis,
+            org_in_charge=node.org_in_charge,
+            org_coordinate=node.org_coordinate,
+            per_household=node.per_household,
+            require_scan=node.require_scan,
+            field_so_vb=node.field_so_vb,
+            field_ngay_vb=node.field_ngay_vb,
+            field_loai_vb=node.field_loai_vb,
+            field_gia_tri_trinh=node.field_gia_tri_trinh,
+            field_gia_tri_duyet=node.field_gia_tri_duyet,
+            field_ghi_chu=node.field_ghi_chu,
+        )
+        session.add(snap)
+        id_map[node.id] = new_id
+    session.flush()
+    for node in nodes:
+        if node.parent_id and node.parent_id in id_map:
+            snap = session.get(HoSoWorkflowNode, id_map[node.id])
+            snap.parent_id = id_map[node.parent_id]
+    session.flush()
+
+
 def get_or_create_ho_so(
     session: Session,
     code: str,
     name: str,
     dia_chi: str,
     cbcq_id: uuid.UUID,
+    template_id: uuid.UUID,
 ) -> Tuple[HoSoGPMB, bool]:
-    """Return (ho_so, created_flag)."""
+    """Return (ho_so, created_flag). Patches missing workflow if hồ sơ already exists."""
     existing = session.execute(
         select(HoSoGPMB).where(HoSoGPMB.code == code)
     ).scalar_one_or_none()
     if existing:
+        if existing.template_id is None:
+            existing.template_id = template_id
+            session.flush()
+            _snapshot_workflow(session, existing.id, template_id)
+            print(f"    [patch] Attached workflow to existing {code}")
         return existing, False
     hs = HoSoGPMB(
         id=uuid.uuid4(),
@@ -138,10 +192,12 @@ def get_or_create_ho_so(
         dia_chi=dia_chi,
         status=HoSoStatusEnum.thuc_hien,
         cbcq_id=cbcq_id,
+        template_id=template_id,
         ngay_bat_dau=datetime.utcnow().date() - timedelta(days=15),
     )
     session.add(hs)
     session.flush()
+    _snapshot_workflow(session, hs.id, template_id)
     return hs, True
 
 
@@ -385,11 +441,15 @@ def seed():
             users = get_users(session)
             cbcq_id = users["cbcq"].id
 
+            template = session.execute(
+                select(WorkflowTemplate).where(WorkflowTemplate.is_active == True)  # noqa: E712
+            ).scalar_one()
+
             # ── Part A: 2 hồ sơ mới ────────────────────────────────────
             new_ho_so_records: Dict[str, HoSoGPMB] = {}
             for code, name, dia_chi, num_ho, ma_prefix in NEW_HO_SO:
                 hs, created = get_or_create_ho_so(
-                    session, code, name, dia_chi, cbcq_id
+                    session, code, name, dia_chi, cbcq_id, template.id
                 )
                 if created:
                     summary["ho_so_created"] += 1

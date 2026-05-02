@@ -76,10 +76,10 @@ export default function LoginPage() {
             borderRadius: 12,
             marginBottom: 12,
           }}>
-            <span style={{ color: 'white', fontWeight: 800, fontSize: 18, letterSpacing: 0.5 }}>AG</span>
+            <span style={{ color: 'white', fontWeight: 800, fontSize: 18, letterSpacing: 0.5 }}>OPC</span>
           </div>
           <div style={{ fontWeight: 800, fontSize: 22, color: '#9B1B30', letterSpacing: 1, lineHeight: '28px' }}>
-            AGRIBANK
+            OPC
           </div>
           <div style={{ fontSize: 14, color: '#1A1A1A', fontWeight: 600, marginTop: 4, lineHeight: '20px' }}>
             Hệ thống GPMB
@@ -141,7 +141,7 @@ export default function LoginPage() {
         </Form>
 
         <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#6B6B6B' }}>
-          © 2025 Agribank — Hệ thống quản lý Giải phóng mặt bằng
+          © 2026 OPC ODIN — Hệ thống quản lý Giải phóng mặt bằng
         </div>
       </div>
     </div>
