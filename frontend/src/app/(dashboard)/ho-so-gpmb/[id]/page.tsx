@@ -394,6 +394,17 @@ function QuyTrinhTab({ hoSoId }: { hoSoId: string }) {
     setDrawerOpen(true)
   }
 
+  const refreshSelectedTask = async () => {
+    if (selectedTask && selectedTask.is_leaf && selectedTask.id) {
+      try {
+        const res = await api.get(`/ho-so/${hoSoId}/tasks/${selectedTask.id}`)
+        setSelectedTask(res.data)
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   if (isLoading) return <Spin style={{ display: 'block', margin: '40px auto' }} />
 
   return (
@@ -408,6 +419,7 @@ function QuyTrinhTab({ hoSoId }: { hoSoId: string }) {
         hoSoId={hoSoId}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        onUpdate={refreshSelectedTask}
       />
     </div>
   )

@@ -20,9 +20,10 @@ interface Props {
   hoSoId: string
   open: boolean
   onClose: () => void
+  onUpdate?: () => void
 }
 
-export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
+export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Props) {
   const queryClient = useQueryClient()
   const currentUser = useCurrentUser()
   const [form] = Form.useForm()
@@ -56,6 +57,9 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
     onSuccess: () => {
       notification.success({ message: 'Cập nhật trạng thái thành công' })
       queryClient.invalidateQueries({ queryKey: ['tasks', hoSoId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-all'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-my'] })
+      onUpdate?.()
     },
     onError: () => notification.error({ message: 'Cập nhật thất bại' }),
   })
@@ -76,6 +80,9 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
     onSuccess: () => {
       notification.success({ message: 'Lưu thành công' })
       queryClient.invalidateQueries({ queryKey: ['tasks', hoSoId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-all'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-my'] })
+      onUpdate?.()
     },
     onError: () => notification.error({ message: 'Lưu thất bại' }),
   })
@@ -92,6 +99,9 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
     onSuccess: () => {
       notification.success({ message: 'Upload file thành công' })
       queryClient.invalidateQueries({ queryKey: ['tasks', hoSoId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-all'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-my'] })
+      onUpdate?.()
     },
     onError: () => notification.error({ message: 'Upload thất bại' }),
   })
@@ -114,6 +124,9 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
       notification.success({ message: 'Đính kèm thành công' })
       setAttName('')
       queryClient.invalidateQueries({ queryKey: ['tasks', hoSoId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-all'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-my'] })
+      onUpdate?.()
     },
     onError: () => notification.error({ message: 'Đính kèm thất bại' }),
   })
@@ -125,6 +138,9 @@ export default function TaskDetail({ task, hoSoId, open, onClose }: Props) {
     onSuccess: () => {
       notification.success({ message: 'Đã xóa đính kèm' })
       queryClient.invalidateQueries({ queryKey: ['tasks', hoSoId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-all'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks-my'] })
+      onUpdate?.()
     },
     onError: () => notification.error({ message: 'Xóa thất bại' }),
   })

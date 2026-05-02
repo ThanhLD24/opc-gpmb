@@ -153,6 +153,17 @@ function TatCaCongViecTabContent({ hoSoOptions }: { hoSoOptions: { value: string
     }
   }
 
+  const refreshDrawerTask = async () => {
+    if (drawerTask && drawerHoSoId) {
+      try {
+        const res = await api.get(`/ho-so/${drawerHoSoId}/tasks/${drawerTask.id}`)
+        setDrawerTask(res.data)
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   const { data, isLoading } = useQuery<TasksResponse>({
     queryKey: ['tasks-all', page, hoSoId, trangThai, maHo, tenChuHo],
     queryFn: async () => {
@@ -258,6 +269,7 @@ function TatCaCongViecTabContent({ hoSoOptions }: { hoSoOptions: { value: string
         hoSoId={drawerHoSoId}
         open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setDrawerTask(null) }}
+        onUpdate={refreshDrawerTask}
       />
     </div>
   )
@@ -296,6 +308,17 @@ function ViecCuaToiTabContent({ hoSoOptions }: { hoSoOptions: { value: string; l
       notification.error({ message: 'Không thể tải chi tiết công việc' })
     } finally {
       setFetchingTask(false)
+    }
+  }
+
+  const refreshDrawerTask = async () => {
+    if (drawerTask && drawerHoSoId) {
+      try {
+        const res = await api.get(`/ho-so/${drawerHoSoId}/tasks/${drawerTask.id}`)
+        setDrawerTask(res.data)
+      } catch {
+        // ignore
+      }
     }
   }
 
@@ -397,6 +420,7 @@ function ViecCuaToiTabContent({ hoSoOptions }: { hoSoOptions: { value: string; l
         hoSoId={drawerHoSoId}
         open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setDrawerTask(null) }}
+        onUpdate={refreshDrawerTask}
       />
       </div>
     </div>
