@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#FBF1F1' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f7f0f0' }}>
       <Sider
         width={240}
         theme="light"
@@ -216,7 +216,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </Sider>
 
-      <Layout style={{ marginLeft: 240, background: '#FBF1F1' }}>
+      <Layout style={{ marginLeft: 240, background: '#f7f0f0' }}>
         <Header style={{
           background: '#FFFFFF',
           padding: '0 24px',
@@ -247,7 +247,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Badge>
           </Popover>
         </Header>
-        <Content style={{ padding: 24, background: '#FBF1F1' }}>
+        <Content style={{ padding: 24, background: '#f7f0f0' }}>
           {children}
         </Content>
       </Layout>

@@ -7,8 +7,8 @@ import 'antd/dist/reset.css'
 
 const agribankTheme = {
   token: {
-    colorPrimary: '#b01e45',
-    colorLink: '#b01e45',
+    colorPrimary: '#9B1B30',
+    colorLink: '#9B1B30',
     borderRadius: 6,
     fontFamily: "'Inter', 'Segoe UI', sans-serif",
   },
@@ -20,7 +20,7 @@ const agribankTheme = {
       itemHoverColor: '#9B1B30',
     },
     Button: {
-      colorPrimary: '#b01e45',
+      colorPrimary: '#9B1B30',
     },
     Table: {
       headerBg: '#FFFFFF',
