@@ -3,7 +3,7 @@
 > **Phiên bản:** 1.0 — 2026-05-01  
 > **Dự án:** CCN Hữu Bằng (HS-202504-001)  
 > **Thời gian dự kiến:** ~40 phút  
-> **URL:** http://localhost:3000
+> **URL:** https://sva.supervisionagents.com/
 
 ---
 
@@ -26,7 +26,7 @@
 
 ### Bước 0.1 — Đăng nhập hệ thống
 
-1. Mở trình duyệt → http://localhost:3000
+1. Mở trình duyệt → https://sva.supervisionagents.com/
 2. Nhập tài khoản: `admin` / `Admin@123`
 3. Click **Đăng nhập** → vào trang Dashboard
 
@@ -384,15 +384,7 @@
 | Chi trả — Bàn giao | CBCQ | Bàn giao → hộ auto da_ban_giao |
 | Chi trả — Từ chối | GDDH | Từ chối với lý do; hộ giữ nguyên trạng thái |
 
----
-
-## Ghi chú kỹ thuật
-
-- **BE:** FastAPI + PostgreSQL, chạy tại port 8000
-- **FE:** Next.js 14 App Router, chạy tại port 3000
-- **File uploads:** Lưu tại `/uploads/` trên BE server; FE dùng `NEXT_PUBLIC_API_URL` để truy cập
-- **Auto-transition:** Được xử lý trong BE endpoint phê duyệt/bàn giao chi trả — không cần thao tác thêm
 
 ---
 
-*Demo chuẩn bị bởi OPC Dev Team — 2026-05-01*
+*Demo chuẩn bị bởi OPC OS Dev Team — 2026-05-01*
