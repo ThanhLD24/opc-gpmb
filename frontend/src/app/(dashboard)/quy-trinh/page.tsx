@@ -189,7 +189,6 @@ export default function QuyTrinhListPage() {
           rowKey="id"
           pagination={false}
           size="small"
-          rowClassName={(r) => r.is_active ? 'ant-table-row-selected' : ''}
         />
       )}
 

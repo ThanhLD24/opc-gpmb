@@ -191,7 +191,15 @@ def build_task_tree(
             node_map[str(node.parent_id)]["children"].append(d)
         else:
             roots.append(d)
-    return roots
+
+    def strip_empty_children(node_dict: Dict) -> Dict:
+        if not node_dict["children"]:
+            node_dict["children"] = None  # leaf — frontend checks children is None
+        else:
+            node_dict["children"] = [strip_empty_children(c) for c in node_dict["children"]]
+        return node_dict
+
+    return [strip_empty_children(r) for r in roots]
 
 
 async def _get_ho_so_or_404(ho_so_id: str, db: AsyncSession) -> HoSoGPMB:

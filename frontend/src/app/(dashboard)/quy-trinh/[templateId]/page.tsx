@@ -315,7 +315,7 @@ export default function QuyTrinhDetailPage() {
           <Title level={4} style={{ margin: 0 }}>
             {templateData?.name ?? '...'}
             {templateData?.is_active && (
-              <Badge status="success" text={<Tag color="green" style={{ marginLeft: 8 }}>Đang hoạt động</Tag>} />
+              <Tag color="green" style={{ marginLeft: 12, verticalAlign: 'middle' }}>Đang hoạt động</Tag>
             )}
           </Title>
         </div>

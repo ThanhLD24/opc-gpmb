@@ -117,11 +117,14 @@ export default function WorkflowTree({ tasks, hoSoId, onTaskClick }: Props) {
       </div>
     )
 
+    // task.is_leaf controls click behavior (title onClick above).
+    // Tree's isLeaf/children must be based on structural children to suppress expand icon.
+    const hasChildren = task.children && task.children.length > 0
     return {
       key: task.id,
       title,
-      children: task.children ? task.children.map(renderNode) : undefined,
-      isLeaf: task.is_leaf,
+      children: hasChildren ? task.children!.map(renderNode) : undefined,
+      isLeaf: !hasChildren,
     }
   }
 
@@ -134,6 +137,7 @@ export default function WorkflowTree({ tasks, hoSoId, onTaskClick }: Props) {
         defaultExpandAll
         showLine={{ showLeafIcon: false }}
         blockNode
+        selectable={false}
       />
 
       <Modal

@@ -257,22 +257,22 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
       {hasAnyField && (
         <Form form={form} layout="vertical">
           {task.field_so_vb && (
-            <Form.Item name="so_vb" label="Số văn bản">
+            <Form.Item name="so_vb" label="Số văn bản" required>
               <Input disabled={!canEdit} placeholder="Nhập số văn bản" />
             </Form.Item>
           )}
           {task.field_ngay_vb && (
-            <Form.Item name="ngay_vb" label="Ngày văn bản">
+            <Form.Item name="ngay_vb" label="Ngày văn bản" required>
               <DatePicker style={{ width: '100%' }} disabled={!canEdit} format="DD/MM/YYYY" />
             </Form.Item>
           )}
           {task.field_loai_vb && (
-            <Form.Item name="loai_vb" label="Loại văn bản">
+            <Form.Item name="loai_vb" label="Loại văn bản" required>
               <Select disabled={!canEdit} options={LOAI_VB_OPTIONS} placeholder="Chọn loại văn bản" allowClear />
             </Form.Item>
           )}
           {task.field_gia_tri_trinh && (
-            <Form.Item name="gia_tri_trinh" label="Giá trị trình (VND)">
+            <Form.Item name="gia_tri_trinh" label="Giá trị trình (VND)" required>
               <InputNumber
                 style={{ width: '100%' }}
                 disabled={!canSave}
@@ -283,7 +283,7 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
             </Form.Item>
           )}
           {task.field_gia_tri_duyet && (
-            <Form.Item name="gia_tri_duyet" label="Giá trị duyệt (VND)">
+            <Form.Item name="gia_tri_duyet" label="Giá trị duyệt (VND)" required>
               <InputNumber
                 style={{ width: '100%' }}
                 disabled={!canSave}
