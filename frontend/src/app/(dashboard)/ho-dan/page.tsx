@@ -2,7 +2,7 @@
 import { Input, Select, Space, Table, Tag, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { ColumnsType } from 'antd/es/table'
 import api from '@/lib/api'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
@@ -61,9 +61,12 @@ const TRANG_THAI_COLORS: Record<string, string> = {
 export default function HoDanPage() {
   const router = useRouter()
   const user = useCurrentUser()
+  const searchParams = useSearchParams()
   const [page, setPage] = useState(1)
   const [hoSoId, setHoSoId] = useState<string | undefined>()
-  const [trangThai, setTrangThai] = useState<string | undefined>()
+  const [trangThai, setTrangThai] = useState<string | undefined>(
+    searchParams.get('trang_thai') || undefined
+  )
   const [cbcqId, setCbcqId] = useState<string | undefined>()
   const [search, setSearch] = useState('')
 

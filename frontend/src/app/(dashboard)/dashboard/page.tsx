@@ -206,10 +206,10 @@ export default function DashboardPage() {
     <div>
       <Title level={4} style={{ marginBottom: 20 }}>Tổng quan GPMB</Title>
 
-      {/* Row 1: Statistic cards */}
+      {/* Row 1: Statistic cards — equal height, clickable */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
+        <Col xs={24} sm={12} lg={6} style={{ display: 'flex' }}>
+          <Card style={{ width: '100%' }} hoverable onClick={() => router.push('/ho-so-gpmb')}>
             <Statistic
               title="Tổng hồ sơ GPMB"
               value={stats?.ho_so.total ?? 0}
@@ -219,8 +219,8 @@ export default function DashboardPage() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
+        <Col xs={24} sm={12} lg={6} style={{ display: 'flex' }}>
+          <Card style={{ width: '100%' }} hoverable onClick={() => router.push('/ho-dan')}>
             <Statistic
               title="Hộ đã bàn giao"
               value={daBanGiao}
@@ -230,8 +230,8 @@ export default function DashboardPage() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
+        <Col xs={24} sm={12} lg={6} style={{ display: 'flex' }}>
+          <Card style={{ width: '100%' }} hoverable onClick={() => router.push('/bao-cao')}>
             <Statistic
               title="Tổng chi trả đã duyệt"
               value={formatCurrency(stats?.chi_tra.tong_da_phe_duyet ?? 0)}
@@ -240,8 +240,8 @@ export default function DashboardPage() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
+        <Col xs={24} sm={12} lg={6} style={{ display: 'flex' }}>
+          <Card style={{ width: '100%' }} hoverable onClick={() => router.push('/ho-dan?trang_thai=moi')}>
             <Statistic
               title="Hộ chờ xử lý"
               value={choXuLy}
@@ -253,10 +253,10 @@ export default function DashboardPage() {
         </Col>
       </Row>
 
-      {/* Row 2: Ho by status */}
+      {/* Row 2: Ho by status — equal height */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col xs={24} lg={12}>
-          <Card title="Hộ theo trạng thái" size="small">
+        <Col xs={24} lg={12} style={{ display: 'flex' }}>
+          <Card title="Hộ theo trạng thái" size="small" style={{ width: '100%' }}>
             {totalHo === 0 ? (
               <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>Chưa có dữ liệu</div>
             ) : (
@@ -284,8 +284,8 @@ export default function DashboardPage() {
             )}
           </Card>
         </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Chi trả tổng hợp" size="small">
+        <Col xs={24} lg={12} style={{ display: 'flex' }}>
+          <Card title="Chi trả tổng hợp" size="small" style={{ width: '100%' }}>
             <div style={{ padding: '8px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                 <span style={{ color: '#52c41a', fontWeight: 500 }}>Đã phê duyệt:</span>
