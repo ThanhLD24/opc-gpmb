@@ -148,7 +148,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {/* Logo area */}
         <div style={{
-          padding: '20px 16px 16px',
+          padding: '0 16px',
+          height: 64,
+          flexShrink: 0,
           borderBottom: '1px solid #F0E8E8',
           display: 'flex',
           alignItems: 'center',
