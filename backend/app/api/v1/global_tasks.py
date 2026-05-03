@@ -108,7 +108,7 @@ async def list_tasks_global(
             Ho.ma_ho.label("ma_ho"),
             Ho.ten_chu_ho.label("ten_chu_ho"),
         )
-    ).order_by(HoSoGPMB.code.asc(), TaskInstance.updated_at.desc()) \
+    ).order_by(HoSoGPMB.code.asc(), HoSoWorkflowNode.order.asc(), TaskInstance.updated_at.desc()) \
      .offset((page - 1) * page_size) \
      .limit(page_size)
 
