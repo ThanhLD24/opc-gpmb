@@ -59,7 +59,7 @@ export default function HoSoListPage() {
 
   useEffect(() => {
     api.get('/auth/users?role=cbcq').then(res => setCbcqList(res.data.items || res.data))
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   const createMutation = useMutation({

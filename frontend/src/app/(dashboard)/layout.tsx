@@ -116,6 +116,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
   const activeKey = getActiveKey()
 
+  const getPageTitle = () => {
+    switch (activeKey) {
+      case '/dashboard': return 'Tổng quan'
+      case '/ho-so-gpmb': return 'Hồ sơ GPMB'
+      case '/ho-dan': return 'Quản lý Hộ dân'
+      case '/cong-viec': return 'Quản lý Công việc'
+      case '/phe-duyet': return 'Phê duyệt'
+      case '/quy-trinh': return 'Quy trình GPMB'
+      case '/ke-hoach-thang': return 'Kế hoạch tháng'
+      case '/bao-cao': return 'Báo cáo'
+      default: return ''
+    }
+  }
+
   return (
     <Layout style={{ minHeight: '100vh', background: '#f7f0f0' }}>
       <Sider
@@ -230,29 +244,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           borderBottom: '1px solid #F0E8E8',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
           position: 'sticky',
           top: 0,
           zIndex: 10,
-          gap: 16,
         }}>
-          <Popover
-            open={notifOpen}
-            onOpenChange={setNotifOpen}
-            trigger="click"
-            placement="bottomRight"
-            content={
-              <NotificationDropdown
-                data={notifData}
-              />
-            }
-            arrow={false}
-            styles={{ body: { padding: 0 } }}
-          >
-            <Badge count={notifData?.unread_count ?? 0} showZero={false}>
-              <BellOutlined style={{ fontSize: 20, color: '#6B6B6B', cursor: 'pointer' }} />
-            </Badge>
-          </Popover>
+          {/* Page Title */}
+          <div style={{ color: '#000000', fontSize: '18px', fontWeight: 600 }}>
+            {getPageTitle()}
+          </div>
+
+          {/* Right Action Icons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Popover
+              open={notifOpen}
+              onOpenChange={setNotifOpen}
+              trigger="click"
+              placement="bottomRight"
+              content={
+                <NotificationDropdown
+                  data={notifData}
+                />
+              }
+              arrow={false}
+              styles={{ body: { padding: 0 } }}
+            >
+              <Badge count={notifData?.unread_count ?? 0} showZero={false}>
+                <BellOutlined style={{ fontSize: 20, color: '#6B6B6B', cursor: 'pointer' }} />
+              </Badge>
+            </Popover>
+          </div>
         </Header>
         <Content style={{ padding: 24, background: '#f7f0f0' }}>
           {children}

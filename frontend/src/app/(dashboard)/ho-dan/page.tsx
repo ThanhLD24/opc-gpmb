@@ -58,7 +58,9 @@ const TRANG_THAI_COLORS: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function HoDanPage() {
+import { Suspense } from 'react'
+
+function HoDanContent() {
   const router = useRouter()
   const user = useCurrentUser()
   const searchParams = useSearchParams()
@@ -276,5 +278,13 @@ export default function HoDanPage() {
         />
       </div>
     </div>
+  )
+}
+
+export default function HoDanPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 24 }}>Đang tải dữ liệu...</div>}>
+      <HoDanContent />
+    </Suspense>
   )
 }
