@@ -108,12 +108,13 @@ function NodeDocuments({ nodeId, isAdmin }: { nodeId: string; isAdmin: boolean }
           )}
 
           {isAdmin && (
-            <Space direction="vertical" style={{ width: '100%', marginTop: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
               <Input
                 size="small"
                 placeholder="Tên tài liệu (để trống sẽ dùng tên file)"
                 value={docName}
                 onChange={(e) => setDocName(e.target.value)}
+                style={{ flex: 1 }}
               />
               <Upload
                 showUploadList={false}
@@ -123,10 +124,10 @@ function NodeDocuments({ nodeId, isAdmin }: { nodeId: string; isAdmin: boolean }
                 }}
               >
                 <Button icon={<UploadOutlined />} size="small" loading={uploadMutation.isPending}>
-                  Tải lên tài liệu
+                  Tải lên
                 </Button>
               </Upload>
-            </Space>
+            </div>
           )}
         </>
       )}
@@ -321,7 +322,7 @@ export default function QuyTrinhDetailPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16, alignItems: 'start', minWidth: 0 }}>
         {/* Left: tree */}
         <Card
           title="Cây quy trình"
@@ -380,8 +381,8 @@ export default function QuyTrinhDetailPage() {
           )}
         </Card>
 
-        {/* Right: node editor */}
         <Card
+          style={{ minWidth: 0, overflow: 'hidden' }}
           title={selectedNode ? `Chi tiết bước: ${selectedNode.code ? `[${selectedNode.code}] ` : ''}${selectedNode.name}` : 'Chọn một bước để chỉnh sửa'}
           size="small"
           extra={
@@ -409,25 +410,27 @@ export default function QuyTrinhDetailPage() {
           {selectedNode ? (
             <>
               <Form form={form} layout="vertical" onFinish={(v) => updateMutation.mutate(v)}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <Form.Item name="name" label="Tên bước" rules={[{ required: true, message: 'Nhập tên bước' }]}>
-                    <Input disabled={!isAdmin} />
-                  </Form.Item>
+                {/* Tên bước — full width */}
+                <Form.Item name="name" label="Tên bước" rules={[{ required: true, message: 'Nhập tên bước' }]}>
+                  <Input disabled={!isAdmin} />
+                </Form.Item>
+
+                {/* Mã bước + Thời gian + Theo từng hộ — cùng 1 hàng */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 16, alignItems: 'end' }}>
                   <Form.Item name="code" label="Mã bước">
                     <Input disabled={!isAdmin} />
                   </Form.Item>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <Form.Item name="planned_days" label="Thời gian kế hoạch (ngày)">
                     <InputNumber style={{ width: '100%' }} min={0} disabled={!isAdmin} />
                   </Form.Item>
-                  <Form.Item name="per_household" label="Theo từng hộ" valuePropName="checked">
+                  <Form.Item name="per_household" label="Theo từng hộ" valuePropName="checked" style={{ marginBottom: 24 }}>
                     <Switch disabled={!isAdmin || parentPerHousehold} />
                   </Form.Item>
                 </div>
 
                 <Divider orientation="left" plain style={{ fontSize: 12 }}>Trường dữ liệu bắt buộc</Divider>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                {/* 7 switches → 2 hàng: grid 4 cột */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
                   {[
                     ['field_so_vb', 'Số văn bản'],
                     ['field_ngay_vb', 'Ngày văn bản'],
@@ -437,31 +440,33 @@ export default function QuyTrinhDetailPage() {
                     ['field_ghi_chu', 'Ghi chú'],
                     ['require_scan', 'Yêu cầu scan'],
                   ].map(([name, label]) => (
-                    <Form.Item key={name} name={name} label={label} valuePropName="checked">
+                    <Form.Item key={name} name={name} label={label} valuePropName="checked" style={{ marginBottom: 8 }}>
                       <Switch disabled={!isAdmin} />
                     </Form.Item>
                   ))}
                 </div>
 
                 <Divider orientation="left" plain style={{ fontSize: 12 }}>Pháp lý & Tổ chức</Divider>
-                <Form.Item name="legal_basis" label="Cơ sở pháp lý">
-                  <Input.TextArea rows={2} disabled={!isAdmin} />
-                </Form.Item>
-                <Form.Item name="org_in_charge" label="Đơn vị phụ trách">
-                  <Input disabled={!isAdmin} />
-                </Form.Item>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <Form.Item name="legal_basis" label="Cơ sở pháp lý">
+                    <Input.TextArea rows={2} disabled={!isAdmin} />
+                  </Form.Item>
+                  <Form.Item name="org_in_charge" label="Đơn vị phụ trách">
+                    <Input.TextArea rows={2} disabled={!isAdmin} />
+                  </Form.Item>
+                </div>
+
+                <Divider orientation="left" plain style={{ fontSize: 12 }}>Tài liệu hướng dẫn</Divider>
+                <NodeDocuments nodeId={selectedNode.id} isAdmin={isAdmin} />
 
                 {isAdmin && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
                     <Button type="primary" htmlType="submit" loading={updateMutation.isPending}>
                       Lưu thay đổi
                     </Button>
                   </div>
                 )}
               </Form>
-
-              <Divider orientation="left" plain style={{ fontSize: 12 }}>Tài liệu hướng dẫn</Divider>
-              <NodeDocuments nodeId={selectedNode.id} isAdmin={isAdmin} />
             </>
           ) : (
             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>
