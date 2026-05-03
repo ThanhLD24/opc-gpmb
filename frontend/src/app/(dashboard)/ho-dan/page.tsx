@@ -181,15 +181,6 @@ function HoDanContent() {
 
   return (
     <div>
-      <Title level={4} style={{ color: '#9B1B30', marginBottom: 16 }}>
-        Quản lý Hộ dân
-        {data ? (
-          <span style={{ fontSize: 14, fontWeight: 400, color: '#555', marginLeft: 8 }}>
-            ({data.total} hộ)
-          </span>
-        ) : null}
-      </Title>
-
       {/* Filter bar */}
       <div
         style={{

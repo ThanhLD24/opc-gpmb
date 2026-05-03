@@ -149,15 +149,7 @@ export default function KeHoachThangPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={4} style={{ color: '#9B1B30', margin: 0 }}>
-          Kế hoạch tháng
-          {data ? (
-            <span style={{ fontSize: 14, fontWeight: 400, color: '#555', marginLeft: 8 }}>
-              ({filteredItems.length !== data.total_items ? `${filteredItems.length}/` : ''}{data.total_items} công việc)
-            </span>
-          ) : null}
-        </Title>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 16 }}>
         <Space>
           <DatePicker
             picker="month"

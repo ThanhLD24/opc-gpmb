@@ -204,8 +204,6 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <Title level={4} style={{ marginBottom: 20 }}>Tổng quan GPMB</Title>
-
       {/* Row 1: Statistic cards — equal height, clickable */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={12} lg={6} style={{ display: 'flex' }}>

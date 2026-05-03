@@ -171,8 +171,7 @@ export default function QuyTrinhListPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>Danh sách quy trình GPMB</Title>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 }}>
         {isAdmin && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             Tạo quy trình mới

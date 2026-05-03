@@ -469,9 +469,6 @@ export default function CongViecPage() {
 
   return (
     <div>
-      <Title level={4} style={{ color: '#9B1B30', marginBottom: 16 }}>
-        Quản lý Công việc
-      </Title>
       <Tabs defaultActiveKey="tat-ca" items={tabItems} />
     </div>
   )

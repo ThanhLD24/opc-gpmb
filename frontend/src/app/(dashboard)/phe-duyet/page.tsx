@@ -480,9 +480,6 @@ export default function PheDuyetPage() {
 
   return (
     <div>
-      <Title level={4} style={{ color: '#9B1B30', marginBottom: 16 }}>
-        Phê duyệt Chi trả
-      </Title>
       <Tabs defaultActiveKey="cho_phe_duyet" items={tabItems} />
     </div>
   )
