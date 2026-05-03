@@ -432,7 +432,6 @@ function PivotTab({ hoSoId }: { hoSoId: string }) {
     queryFn: async () => {
       const res = await api.get(`/ho-so/${hoSoId}/pivot`)
       const apiData = res.data
-      // Transform from {columns, rows} shape to PivotRow[]
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (apiData.rows || []).map((row: any) => ({
         ho: {
@@ -467,70 +466,259 @@ function PivotTab({ hoSoId }: { hoSoId: string }) {
     }
   }
 
-  // Build dynamic columns from first row
   const taskCodes = pivot && pivot.length > 0 ? Object.keys(pivot[0].tasks) : []
 
-  const frozenColumns: ColumnsType<PivotRow> = [
-    {
-      title: 'STT',
-      key: 'stt',
-      width: 60,
-      fixed: 'left',
-      align: 'center',
-      render: (_: unknown, __: PivotRow, index: number) => index + 1,
-    },
-    {
-      title: 'Mã hộ',
-      key: 'ma_ho',
-      width: 100,
-      fixed: 'left',
-      render: (_: unknown, record: PivotRow) => (
-        <Link href={`/cong-viec?ho_so_id=${hoSoId}&ma_ho=${record.ho.ma_ho}`}>
-          {record.ho.ma_ho}
-        </Link>
-      ),
-    },
-    {
-      title: 'Tên chủ hộ',
-      key: 'ten_chu_ho',
-      width: 160,
-      fixed: 'left',
-      render: (_: unknown, record: PivotRow) => (
-        <Link href={`/cong-viec?ho_so_id=${hoSoId}&ma_ho=${record.ho.ma_ho}`}>
-          {record.ho.ten_chu_ho}
-        </Link>
-      ),
-    },
-  ]
+  if (isLoading) return <Spin style={{ display: 'block', margin: '40px auto' }} />
 
-  const taskColumns: ColumnsType<PivotRow> = taskCodes.map((code) => ({
-    title: code,
-    key: code,
-    width: 80,
-    align: 'center' as const,
-    render: (_: unknown, record: PivotRow) =>
-      record.tasks[code] === 'hoan_thanh' ? (
-        <CheckOutlined style={{ color: '#52c41a', fontWeight: 700 }} />
-      ) : null,
-  }))
+  // ── Shared cell/column sizes ──────────────────────────────────────────────
+  const ROW_H = 28          // px — compact row height
+  const COL_STT = 40        // px
+  const COL_MA_HO = 80      // px
+  const COL_TEN = 140       // px
+  const COL_TASK = 52       // px — task columns
+
+  const stickyBase: React.CSSProperties = {
+    position: 'sticky',
+    zIndex: 2,
+    background: '#f5f5f5',
+  }
+
+  const cellBase: React.CSSProperties = {
+    height: ROW_H,
+    lineHeight: `${ROW_H}px`,
+    padding: '0 4px',
+    fontSize: 11,
+    borderRight: '1px solid #e0e0e0',
+    borderBottom: '1px solid #e0e0e0',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    boxSizing: 'border-box',
+  }
+
+  // count completed & total per row for a summary badge
+  const getStats = (tasks: Record<string, string>) => {
+    const total = Object.keys(tasks).length
+    const done = Object.values(tasks).filter(v => v === 'hoan_thanh').length
+    return { done, total }
+  }
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button icon={<DownloadOutlined />} onClick={handleExport}>Xuất Excel</Button>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Legend */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#555' }}>
+            <span style={{ display: 'inline-block', width: 14, height: 14, background: '#52c41a', borderRadius: 2 }} />
+            Hoàn thành
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#555' }}>
+            <span style={{ display: 'inline-block', width: 14, height: 14, background: '#faad14', borderRadius: 2 }} />
+            Chưa hoàn thành
+          </div>
+        </div>
+        <Button size="small" icon={<DownloadOutlined />} onClick={handleExport}>Xuất Excel</Button>
       </div>
-      <div style={{ background: 'white', borderRadius: 8 }}>
-        <Table
-          columns={[...frozenColumns, ...taskColumns]}
-          dataSource={pivot}
-          rowKey={(r) => r.ho.id}
-          loading={isLoading}
-          scroll={{ x: 320 + taskCodes.length * 80, y: 500 }}
-          pagination={false}
-          size="small"
-          bordered
-        />
+
+      {/* Matrix wrapper — scrollable both axes */}
+      <div
+        style={{
+          overflowX: 'auto',
+          overflowY: 'auto',
+          maxHeight: 'calc(100vh - 280px)',
+          border: '1px solid #e0e0e0',
+          borderRadius: 6,
+          background: '#fff',
+        }}
+      >
+        <table
+          style={{
+            borderCollapse: 'collapse',
+            tableLayout: 'fixed',
+            width: COL_STT + COL_MA_HO + COL_TEN + taskCodes.length * COL_TASK,
+            fontSize: 11,
+          }}
+        >
+          {/* ── Column widths ────────────────────────────── */}
+          <colgroup>
+            <col style={{ width: COL_STT }} />
+            <col style={{ width: COL_MA_HO }} />
+            <col style={{ width: COL_TEN }} />
+            {taskCodes.map(c => <col key={c} style={{ width: COL_TASK }} />)}
+          </colgroup>
+
+          {/* ── Header row ────────────────────────────────── */}
+          <thead>
+            <tr>
+              {/* STT */}
+              <th style={{
+                ...cellBase, ...stickyBase,
+                left: 0,
+                width: COL_STT,
+                textAlign: 'center',
+                fontWeight: 600,
+                color: '#333',
+                background: '#f0f0f0',
+                zIndex: 4,
+              }}>
+                STT
+              </th>
+              {/* Mã hộ */}
+              <th style={{
+                ...cellBase, ...stickyBase,
+                left: COL_STT,
+                width: COL_MA_HO,
+                fontWeight: 600,
+                color: '#333',
+                background: '#f0f0f0',
+                zIndex: 4,
+              }}>
+                Mã hộ
+              </th>
+              {/* Tên chủ hộ */}
+              <th style={{
+                ...cellBase, ...stickyBase,
+                left: COL_STT + COL_MA_HO,
+                width: COL_TEN,
+                fontWeight: 600,
+                color: '#333',
+                background: '#f0f0f0',
+                zIndex: 4,
+              }}>
+                Tên chủ hộ
+              </th>
+              {/* Task columns */}
+              {taskCodes.map(code => (
+                <th
+                  key={code}
+                  title={code}
+                  style={{
+                    ...cellBase,
+                    width: COL_TASK,
+                    textAlign: 'center',
+                    fontWeight: 600,
+                    color: '#1d3557',
+                    background: '#e8f0fe',
+                    padding: '2px 2px',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {code}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          {/* ── Data rows ─────────────────────────────────── */}
+          <tbody>
+            {(pivot || []).map((row, idx) => {
+              const { done, total } = getStats(row.tasks)
+              const allDone = done === total && total > 0
+              return (
+                <tr
+                  key={row.ho.id}
+                  style={{ background: allDone ? '#f6ffed' : idx % 2 === 0 ? '#fff' : '#fafafa' }}
+                >
+                  {/* STT */}
+                  <td style={{
+                    ...cellBase, ...stickyBase,
+                    left: 0,
+                    width: COL_STT,
+                    textAlign: 'center',
+                    color: '#888',
+                    background: allDone ? '#f6ffed' : idx % 2 === 0 ? '#fafafa' : '#f5f5f5',
+                  }}>
+                    {idx + 1}
+                  </td>
+
+                  {/* Mã hộ — clickable */}
+                  <td style={{
+                    ...cellBase, ...stickyBase,
+                    left: COL_STT,
+                    width: COL_MA_HO,
+                    background: allDone ? '#f6ffed' : idx % 2 === 0 ? '#fafafa' : '#f5f5f5',
+                  }}>
+                    <Link
+                      href={`/cong-viec?ho_so_id=${hoSoId}&ma_ho=${row.ho.ma_ho}`}
+                      style={{ fontWeight: 600, color: '#1677ff', fontSize: 11 }}
+                    >
+                      {row.ho.ma_ho}
+                    </Link>
+                  </td>
+
+                  {/* Tên chủ hộ */}
+                  <td style={{
+                    ...cellBase, ...stickyBase,
+                    left: COL_STT + COL_MA_HO,
+                    width: COL_TEN,
+                    background: allDone ? '#f6ffed' : idx % 2 === 0 ? '#fafafa' : '#f5f5f5',
+                  }}>
+                    <span title={row.ho.ten_chu_ho}>{row.ho.ten_chu_ho}</span>
+                    {' '}
+                    <span style={{
+                      display: 'inline-block',
+                      fontSize: 10,
+                      padding: '0 4px',
+                      borderRadius: 8,
+                      background: allDone ? '#b7eb8f' : '#fff1b8',
+                      color: allDone ? '#237804' : '#ad6800',
+                      fontWeight: 600,
+                      lineHeight: '16px',
+                    }}>
+                      {done}/{total}
+                    </span>
+                  </td>
+
+                  {/* Task cells */}
+                  {taskCodes.map(code => {
+                    const done = row.tasks[code] === 'hoan_thanh'
+                    return (
+                      <td
+                        key={code}
+                        style={{
+                          ...cellBase,
+                          width: COL_TASK,
+                          textAlign: 'center',
+                          background: done ? '#52c41a' : '#faad14',
+                          color: done ? '#fff' : '#7c4f00',
+                          fontWeight: done ? 700 : 400,
+                          fontSize: done ? 13 : 14,
+                          userSelect: 'none',
+                        }}
+                        title={done ? 'Hoàn thành' : 'Chưa hoàn thành'}
+                      >
+                        {done ? '✓' : '···'}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
+
+            {/* Empty state */}
+            {(!pivot || pivot.length === 0) && (
+              <tr>
+                <td
+                  colSpan={3 + taskCodes.length}
+                  style={{ ...cellBase, textAlign: 'center', color: '#aaa', height: 60, lineHeight: '60px' }}
+                >
+                  Chưa có dữ liệu tiến độ
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
+
+      {/* Summary footer */}
+      {pivot && pivot.length > 0 && (
+        <div style={{ marginTop: 8, fontSize: 11, color: '#888', textAlign: 'right' }}>
+          {pivot.length} hộ · {taskCodes.length} công việc
+        </div>
+      )}
     </div>
   )
 }
