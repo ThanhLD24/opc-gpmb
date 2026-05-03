@@ -149,6 +149,9 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
 
   const hasAnyField = task.field_so_vb || task.field_ngay_vb || task.field_loai_vb ||
     task.field_gia_tri_trinh || task.field_gia_tri_duyet || task.field_ghi_chu
+  const hasNodeDocs = !!(task.node_documents && task.node_documents.length > 0)
+  // Track what renders above each section to avoid consecutive empty dividers
+  const statusBlockShows = isLeaf && canEdit
 
   return (
     <Drawer
@@ -164,7 +167,7 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
       }
       open={open}
       onClose={onClose}
-      width={480}
+      width={520}
       footer={
         canSave && hasAnyField ? (
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -199,38 +202,37 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
     >
       {/* Status */}
       {isLeaf && canEdit && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <span style={{ fontWeight: 500 }}>Trạng thái:</span>
-            <Switch
-              checked={task.status === 'hoan_thanh'}
-              onChange={(checked) => {
-                if (checked) {
-                  const vals = form.getFieldsValue()
-                  const missing: string[] = []
-                  if (task!.field_so_vb && !vals.so_vb) missing.push('Số văn bản')
-                  if (task!.field_ngay_vb && !vals.ngay_vb) missing.push('Ngày văn bản')
-                  if (task!.field_loai_vb && !vals.loai_vb) missing.push('Loại văn bản')
-                  if (task!.field_gia_tri_trinh && vals.gia_tri_trinh == null) missing.push('Giá trị trình')
-                  if (task!.field_gia_tri_duyet && vals.gia_tri_duyet == null) missing.push('Giá trị duyệt')
-                  if (missing.length > 0) {
-                    notification.warning({
-                      message: 'Chưa điền đủ thông tin',
-                      description: `Vui lòng điền: ${missing.join(', ')} trước khi hoàn thành`,
-                    })
-                    return
-                  }
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <span style={{ fontWeight: 500 }}>Trạng thái:</span>
+          <Switch
+            checked={task.status === 'hoan_thanh'}
+            onChange={(checked) => {
+              if (checked) {
+                const vals = form.getFieldsValue()
+                const missing: string[] = []
+                if (task!.field_so_vb && !vals.so_vb) missing.push('Số văn bản')
+                if (task!.field_ngay_vb && !vals.ngay_vb) missing.push('Ngày văn bản')
+                if (task!.field_loai_vb && !vals.loai_vb) missing.push('Loại văn bản')
+                if (task!.field_gia_tri_trinh && vals.gia_tri_trinh == null) missing.push('Giá trị trình')
+                if (task!.field_gia_tri_duyet && vals.gia_tri_duyet == null) missing.push('Giá trị duyệt')
+                if (missing.length > 0) {
+                  notification.warning({
+                    message: 'Chưa điền đủ thông tin',
+                    description: `Vui lòng điền: ${missing.join(', ')} trước khi hoàn thành`,
+                  })
+                  return
                 }
-                statusMutation.mutate(checked)
-              }}
-              checkedChildren="Hoàn thành"
-              unCheckedChildren="Đang thực hiện"
-              loading={statusMutation.isPending}
-            />
-          </div>
-          <Divider />
-        </>
+              }
+              statusMutation.mutate(checked)
+            }}
+            checkedChildren="Hoàn thành"
+            unCheckedChildren="Đang thực hiện"
+            loading={statusMutation.isPending}
+          />
+        </div>
       )}
+      {/* Divider after status — only when there is content below */}
+      {statusBlockShows && (hasAnyField || task.require_scan || hasNodeDocs) && <Divider />}
       {!canEdit && (
         <div style={{ marginBottom: 16 }}>
           <span style={{ fontWeight: 500 }}>Trạng thái: </span>
@@ -256,43 +258,55 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
       {/* Custom fields */}
       {hasAnyField && (
         <Form form={form} layout="vertical">
-          {task.field_so_vb && (
-            <Form.Item name="so_vb" label="Số văn bản" required>
-              <Input disabled={!canEdit} placeholder="Nhập số văn bản" />
-            </Form.Item>
+          {/* Row 1: Số VB + Ngày VB */}
+          {(task.field_so_vb || task.field_ngay_vb) && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+              {task.field_so_vb && (
+                <Form.Item name="so_vb" label="Số văn bản" required>
+                  <Input disabled={!canEdit} placeholder="Nhập số văn bản" />
+                </Form.Item>
+              )}
+              {task.field_ngay_vb && (
+                <Form.Item name="ngay_vb" label="Ngày văn bản" required>
+                  <DatePicker style={{ width: '100%' }} disabled={!canEdit} format="DD/MM/YYYY" />
+                </Form.Item>
+              )}
+            </div>
           )}
-          {task.field_ngay_vb && (
-            <Form.Item name="ngay_vb" label="Ngày văn bản" required>
-              <DatePicker style={{ width: '100%' }} disabled={!canEdit} format="DD/MM/YYYY" />
-            </Form.Item>
-          )}
+          {/* Loại VB — full width */}
           {task.field_loai_vb && (
             <Form.Item name="loai_vb" label="Loại văn bản" required>
               <Select disabled={!canEdit} options={LOAI_VB_OPTIONS} placeholder="Chọn loại văn bản" allowClear />
             </Form.Item>
           )}
-          {task.field_gia_tri_trinh && (
-            <Form.Item name="gia_tri_trinh" label="Giá trị trình (VND)" required>
-              <InputNumber
-                style={{ width: '100%' }}
-                disabled={!canSave}
-                formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                parser={(v) => Number(v!.replace(/\./g, '')) as 0}
-                min={0}
-              />
-            </Form.Item>
+          {/* Row 2: Giá trị trình + Giá trị duyệt */}
+          {(task.field_gia_tri_trinh || task.field_gia_tri_duyet) && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+              {task.field_gia_tri_trinh && (
+                <Form.Item name="gia_tri_trinh" label="Giá trị trình (VND)" required>
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    disabled={!canSave}
+                    formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                    parser={(v) => Number(v!.replace(/\./g, '')) as 0}
+                    min={0}
+                  />
+                </Form.Item>
+              )}
+              {task.field_gia_tri_duyet && (
+                <Form.Item name="gia_tri_duyet" label="Giá trị duyệt (VND)" required>
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    disabled={!canSave}
+                    formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                    parser={(v) => Number(v!.replace(/\./g, '')) as 0}
+                    min={0}
+                  />
+                </Form.Item>
+              )}
+            </div>
           )}
-          {task.field_gia_tri_duyet && (
-            <Form.Item name="gia_tri_duyet" label="Giá trị duyệt (VND)" required>
-              <InputNumber
-                style={{ width: '100%' }}
-                disabled={!canSave}
-                formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                parser={(v) => Number(v!.replace(/\./g, '')) as 0}
-                min={0}
-              />
-            </Form.Item>
-          )}
+          {/* Ghi chú — full width */}
           {task.field_ghi_chu && (
             <Form.Item name="ghi_chu" label="Ghi chú">
               <Input.TextArea rows={3} disabled={!canSave} />
@@ -303,8 +317,9 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
 
       {/* File scan */}
       {task.require_scan && (
-        <div style={{ marginTop: hasAnyField ? 0 : 8 }}>
-          <Divider />
+        <div>
+          {/* Only show divider if there's content above (fields or status-already-with-divider) */}
+          {(hasAnyField || (!hasAnyField && !statusBlockShows)) && <Divider />}
           <div style={{ fontWeight: 500, marginBottom: 8 }}>File scan</div>
           {task.file_scan_url ? (
             <Space>
@@ -344,9 +359,10 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
       )}
 
       {/* Tài liệu hướng dẫn (từ workflow node template) */}
-      {task.node_documents && task.node_documents.length > 0 && (
-        <div style={{ marginTop: 8 }}>
-          <Divider />
+      {hasNodeDocs && (
+        <div>
+          {/* Show divider only when there's no immediately preceding divider from file_scan or status */}
+          {(hasAnyField || task.require_scan || (!hasAnyField && !task.require_scan && !statusBlockShows)) && <Divider />}
           <div style={{ fontWeight: 500, marginBottom: 8 }}>
             <FileTextOutlined style={{ marginRight: 6 }} />
             Tài liệu hướng dẫn
@@ -371,9 +387,9 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
         </div>
       )}
 
-      {/* Văn bản đính kèm */}
+      {/* Attachments — always shown, Divider only if something is above */}
       <div style={{ marginTop: 8 }}>
-        <Divider />
+        {(hasAnyField || task.require_scan || hasNodeDocs || statusBlockShows) && <Divider />}
         <div style={{ fontWeight: 500, marginBottom: 8 }}>Văn bản đính kèm</div>
         {task.attachments && task.attachments.length > 0 && (
           <List
@@ -413,13 +429,13 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
           />
         )}
         {canSave && (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
             <Input
               size="small"
-              placeholder="Tên văn bản (để trống sẽ dùng tên file)"
+              placeholder="Tên văn bản (tùy chọn)"
               value={attName}
               onChange={(e) => setAttName(e.target.value)}
-              style={{ maxWidth: 280 }}
+              style={{ flex: 1 }}
             />
             <Upload
               showUploadList={false}
@@ -433,10 +449,10 @@ export default function TaskDetail({ task, hoSoId, open, onClose, onUpdate }: Pr
                 size="small"
                 loading={addAttachmentMutation.isPending}
               >
-                Đính kèm văn bản
+                Đính kèm
               </Button>
             </Upload>
-          </Space>
+          </div>
         )}
       </div>
     </Drawer>
