@@ -1,5 +1,38 @@
 # BMAD Handoff Log — OPC GPMB
 
+## Entry 022 — 2026-05-05
+**From:** Tech Lead + BE Engineer + FE Engineer (Sprint 9)
+**To:** TQE
+**Artifacts:** `docs/architecture/sprint-9-kickoff.md`, commits `95bbdde` (BE) + `af03a74` (FE)
+**Status:** ✅ SPRINT 9 COMPLETE — sẵn sàng cho TQE
+
+### Summary
+Sprint 9: Logic ngày tháng và tiến độ công việc (theo `docs/logic_phancap.md`)
+
+**Backend (commit `95bbdde`):**
+- **DB migration** `72a40fc53a29`: thêm `is_parallel` vào `workflow_nodes` + `ho_so_workflow_nodes`; `planned_start_date`/`planned_end_date` vào `ho_so_workflow_nodes`; `actual_start_date`/`actual_end_date` vào `task_instances`
+- **New service** `backend/app/services/task_date_service.py`:
+  - `calculate_planned_dates()` — tính ngày dự kiến đệ quy theo cây, hỗ trợ sequential + parallel group
+  - `set_actual_start_for_next()` — sau khi task hoàn thành, set actual_start cho task tiếp theo
+  - `set_actual_end()` — set actual_end và trigger propagation
+- **workflow.py**: `is_parallel` trong schema create/update/serialize + snapshot propagation
+- **task.py**: hook `set_actual_end` khi status → `hoan_thanh`; date fields trong `task_to_dict`
+- **ho_so.py**: trigger `calculate_planned_dates` + `_set_initial_actual_start` khi tạo workflow snapshot; `POST /ho-so/{id}/recalculate-dates` endpoint
+- **global_tasks.py**: `compute_tien_do()` helper; date fields trong SELECT + output
+
+**Frontend (commit `af03a74`):**
+- **`/quy-trinh/[templateId]`**: `is_parallel` checkbox + "Song song" cyan badge trong node tree
+- **`/cong-viec`**: 5 cột mới — 4 cột ngày (planned/actual start/end) + cột Tiến độ (Tag xanh/đỏ/dash); `scroll={{ x: 'max-content' }}`
+- **`/types/index.ts`**: `is_parallel: boolean` trên `WorkflowNode`
+
+**TypeScript:** 0 errors trên HEAD `af03a74`
+**DB:** reseed sau migration (533 hộ, 3 hồ sơ, 4 users, 114 nodes, ~48k tasks)
+
+### Open items
+- TQE cần test: sequential date calc, parallel group, progress evaluation, actual_start propagation
+
+---
+
 ## Entry 021 — 2026-05-05
 **From:** Developer (manual commits)
 **To:** BMAD Orchestrator / TQE

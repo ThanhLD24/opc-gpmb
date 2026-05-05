@@ -78,19 +78,33 @@ Tab 6: Kế hoạch tháng
 
 ---
 
+#### Sprint 9 — Logic Ngày Tháng & Tiến Độ (2026-05-05)
+| Feature | Commit | Status |
+|---|---|---|
+| DB migration: `is_parallel`, `planned_start/end_date` (HoSoWorkflowNode), `actual_start/end_date` (TaskInstance) | 95bbdde | ✅ |
+| Workflow admin API: `is_parallel` flag on nodes (create/update/serialize + snapshot propagation) | 95bbdde | ✅ |
+| New `task_date_service.py`: `calculate_planned_dates` (sequential + parallel group logic), `set_actual_start_for_next`, `set_actual_end` | 95bbdde | ✅ |
+| Hook: task status `hoan_thanh` triggers `set_actual_end` + next-task `actual_start` propagation | 95bbdde | ✅ |
+| `POST /ho-so/{id}/recalculate-dates` endpoint (admin) + auto-trigger on workflow init | 95bbdde | ✅ |
+| Expose `planned_*`, `actual_*`, `tien_do` in `GET /tasks` global list | 95bbdde | ✅ |
+| FE: `is_parallel` checkbox + "Song song" badge in `/quy-trinh` node editor | af03a74 | ✅ |
+| FE: 4 date columns + Tiến độ column in `/cong-viec` table | af03a74 | ✅ |
+| DB reseed after migration (schema+data reset) | manual | ✅ |
+
 ## 🔴 Còn pending
 
 | Item | Priority | Artifact |
 |---|---|---|
-| **S8-F2: Đính kèm tài liệu task** (task_attachments table, 4 endpoints, FE section) | 🟡 Should Have | `docs/features/s8-task-attachments-brief.md` |
-| **TQE Sprint 8-F1 + manual commits** (no sprint-8-results.md yet) | 🔴 Must test | — |
+| **TQE Sprint 9** (test date logic, parallel group, progress evaluation) | 🔴 Must test | `docs/testing/sprint-9-results.md` (to be created) |
+| **TQE Sprint 8-F1 + manual commits** (no sprint-8-results.md yet) | 🟡 Low priority | — |
 
 ---
 
 ## BMAD Handoff Log
 - Entry 020 (2026-05-01): Sprint 8-F1 COMPLETE
-- **20 commits thủ công sau đó (2026-05-02 → 05-03) chưa được log vào handoff-log.md**
-- Để tiếp tục BMAD workflow: invoke `/tester-qe` để test Sprint 8-F1 + UI polish commits
+- Entry 021 (2026-05-05): Sync 20 manual commits (2026-05-02 → 05-03) + Sprint 9 kickoff
+- Entry 022 (2026-05-05): Sprint 9 COMPLETE (BE 95bbdde + FE af03a74)
+- **Next step:** invoke `/tester-qe` to test Sprint 9
 
 ## TypeScript Build
-- **0 errors** (verified 2026-05-05 trên HEAD `529ebcd`)
+- **0 errors** (verified 2026-05-05 trên HEAD `af03a74`)
