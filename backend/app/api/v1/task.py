@@ -36,6 +36,8 @@ from ...services.task_service import (
     remove_household_from_node,
     update_task_rollup,
 )
+from ...services.task_date_service import set_actual_end
+from .global_tasks import compute_tien_do
 from ..deps import get_current_user, require_roles
 
 router = APIRouter()
@@ -148,6 +150,16 @@ def task_to_dict_enriched(task: TaskInstance) -> Dict[str, Any]:
         # Documents & attachments
         "node_documents": node_documents,
         "attachments": attachments,
+        # Date fields
+        "planned_start_date": node.planned_start_date.isoformat() if node and node.planned_start_date else None,
+        "planned_end_date": node.planned_end_date.isoformat() if node and node.planned_end_date else None,
+        "actual_start_date": task.actual_start_date.isoformat() if task.actual_start_date else None,
+        "actual_end_date": task.actual_end_date.isoformat() if task.actual_end_date else None,
+        "tien_do": compute_tien_do(
+            node.planned_end_date if node else None,
+            task.actual_start_date,
+            task.actual_end_date,
+        ),
     }
 
 
@@ -339,6 +351,10 @@ async def update_task_status(
         task.completed_at = None
 
     await db.flush()
+
+    # Date propagation
+    if new_status == TaskStatusEnum.hoan_thanh:
+        await set_actual_end(task.id, db)
 
     # Rollup
     await update_task_rollup(

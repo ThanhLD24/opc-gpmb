@@ -113,6 +113,7 @@ class WorkflowNode(Base):
     org_in_charge: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     org_coordinate: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     per_household: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_parallel: Mapped[bool] = mapped_column(Boolean, default=False)
     require_scan: Mapped[bool] = mapped_column(Boolean, default=False)
     field_so_vb: Mapped[bool] = mapped_column(Boolean, default=False)
     field_ngay_vb: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -236,6 +237,9 @@ class HoSoWorkflowNode(Base):
     org_in_charge: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     org_coordinate: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     per_household: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_parallel: Mapped[bool] = mapped_column(Boolean, default=False)
+    planned_start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    planned_end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     require_scan: Mapped[bool] = mapped_column(Boolean, default=False)
     field_so_vb: Mapped[bool] = mapped_column(Boolean, default=False)
     field_ngay_vb: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -379,6 +383,8 @@ class TaskInstance(Base):
     ghi_chu: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     scan_file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    actual_start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    actual_end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow

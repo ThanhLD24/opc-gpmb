@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date as date_type
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,6 +18,21 @@ TASK_STATUS_LABELS: dict[str, str] = {
     "dang_thuc_hien": "Đang thực hiện",
     "hoan_thanh": "Hoàn thành",
 }
+
+
+def compute_tien_do(
+    planned_end: date_type | None,
+    actual_start: date_type | None,
+    actual_end: date_type | None,
+) -> str | None:
+    if actual_end is not None:
+        if planned_end is None:
+            return None
+        return "dung_tien_do" if actual_end <= planned_end else "cham_tien_do"
+    if actual_start is not None and planned_end is not None:
+        today = date_type.today()
+        return "dung_tien_do" if today <= planned_end else "cham_tien_do"
+    return None
 
 
 @router.get("")
@@ -101,7 +117,11 @@ async def list_tasks_global(
             TaskInstance.status,
             TaskInstance.updated_at,
             TaskInstance.ho_id,
+            TaskInstance.actual_start_date,
+            TaskInstance.actual_end_date,
             HoSoWorkflowNode.name.label("ten_cong_viec"),
+            HoSoWorkflowNode.planned_start_date,
+            HoSoWorkflowNode.planned_end_date,
             HoSoGPMB.code.label("ho_so_code"),
             HoSoGPMB.name.label("ho_so_name"),
             User.full_name.label("cbcq_name"),
@@ -128,6 +148,11 @@ async def list_tasks_global(
             "ho_id": str(row["ho_id"]) if row["ho_id"] else None,
             "ma_ho": row["ma_ho"],
             "ten_chu_ho": row["ten_chu_ho"],
+            "planned_start_date": row["planned_start_date"].isoformat() if row["planned_start_date"] else None,
+            "planned_end_date": row["planned_end_date"].isoformat() if row["planned_end_date"] else None,
+            "actual_start_date": row["actual_start_date"].isoformat() if row["actual_start_date"] else None,
+            "actual_end_date": row["actual_end_date"].isoformat() if row["actual_end_date"] else None,
+            "tien_do": compute_tien_do(row["planned_end_date"], row["actual_start_date"], row["actual_end_date"]),
         }
         for row in rows
     ]

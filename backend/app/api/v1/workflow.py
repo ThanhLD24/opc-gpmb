@@ -37,6 +37,7 @@ class WorkflowNodeCreate(BaseModel):
     org_in_charge: Optional[str] = None
     org_coordinate: Optional[str] = None
     per_household: bool = False
+    is_parallel: bool = False
     require_scan: bool = False
     field_so_vb: bool = False
     field_ngay_vb: bool = False
@@ -57,6 +58,7 @@ class WorkflowNodeUpdate(BaseModel):
     org_in_charge: Optional[str] = None
     org_coordinate: Optional[str] = None
     per_household: Optional[bool] = None
+    is_parallel: Optional[bool] = None
     require_scan: Optional[bool] = None
     field_so_vb: Optional[bool] = None
     field_ngay_vb: Optional[bool] = None
@@ -92,6 +94,7 @@ def node_to_dict(node: WorkflowNode) -> Dict[str, Any]:
         "org_in_charge": node.org_in_charge,
         "org_coordinate": node.org_coordinate,
         "per_household": node.per_household,
+        "is_parallel": node.is_parallel,
         "require_scan": node.require_scan,
         "field_so_vb": node.field_so_vb,
         "field_ngay_vb": node.field_ngay_vb,
@@ -312,6 +315,7 @@ async def create_node(
         org_in_charge=body.org_in_charge,
         org_coordinate=body.org_coordinate,
         per_household=body.per_household,
+        is_parallel=body.is_parallel,
         require_scan=body.require_scan,
         field_so_vb=body.field_so_vb,
         field_ngay_vb=body.field_ngay_vb,

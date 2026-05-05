@@ -22,6 +22,7 @@ from ...db.models import (
     RoleEnum,
 )
 from ...services.task_service import generate_tasks_for_ho_so
+from ...services.task_date_service import calculate_planned_dates
 from ..deps import get_current_user, require_roles
 
 router = APIRouter()
@@ -115,6 +116,7 @@ async def _snapshot_workflow(
             org_in_charge=node.org_in_charge,
             org_coordinate=node.org_coordinate,
             per_household=node.per_household,
+            is_parallel=node.is_parallel,
             require_scan=node.require_scan,
             field_so_vb=node.field_so_vb,
             field_ngay_vb=node.field_ngay_vb,
@@ -136,6 +138,44 @@ async def _snapshot_workflow(
             )
             new_node = node_result.scalar_one()
             new_node.parent_id = id_map[node.parent_id]
+
+    await db.flush()
+
+
+async def _set_initial_actual_start(
+    ho_so_id: uuid.UUID,
+    anchor_date: Optional[date],
+    db: AsyncSession,
+) -> None:
+    """
+    Set actual_start_date on TaskInstances that belong to root-level nodes
+    (parent_id IS NULL) in this ho_so. Uses anchor_date if provided, else today.
+    """
+    from ...db.models import TaskInstance
+    from datetime import date as date_type
+
+    start = anchor_date if anchor_date else date_type.today()
+
+    # Get root nodes (parent_id IS NULL)
+    root_result = await db.execute(
+        select(HoSoWorkflowNode).where(
+            HoSoWorkflowNode.ho_so_id == ho_so_id,
+            HoSoWorkflowNode.parent_id.is_(None),
+        )
+    )
+    root_nodes = list(root_result.scalars().all())
+
+    for node in root_nodes:
+        tasks_result = await db.execute(
+            select(TaskInstance).where(
+                TaskInstance.workflow_node_id == node.id,
+                TaskInstance.ho_so_id == ho_so_id,
+            )
+        )
+        tasks = list(tasks_result.scalars().all())
+        for task in tasks:
+            if task.actual_start_date is None:
+                task.actual_start_date = start
 
     await db.flush()
 
@@ -229,6 +269,10 @@ async def create_ho_so(
         await _snapshot_workflow(ho_so.id, template_id, db)
         # Generate non-per_household tasks
         await generate_tasks_for_ho_so(ho_so.id, db)
+        # Calculate planned dates
+        await calculate_planned_dates(ho_so.id, db)
+        # Set actual_start_date on root node TaskInstances
+        await _set_initial_actual_start(ho_so.id, ho_so.ngay_bat_dau, db)
 
     await db.commit()
     result = await db.execute(
@@ -363,3 +407,15 @@ async def delete_ho_so(
     ho_so.deleted_at = datetime.utcnow()
     ho_so.updated_at = datetime.utcnow()
     await db.commit()
+
+
+@router.post("/{ho_so_id}/recalculate-dates")
+async def recalculate_dates(
+    ho_so_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles(RoleEnum.admin)),
+):
+    """Recalculate all planned dates for a hồ sơ (e.g., after ngay_bat_dau change)."""
+    await calculate_planned_dates(uuid.UUID(ho_so_id), db)
+    await db.commit()
+    return {"message": "Dates recalculated"}
