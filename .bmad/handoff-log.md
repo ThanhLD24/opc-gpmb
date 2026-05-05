@@ -1,5 +1,39 @@
 # BMAD Handoff Log — OPC GPMB
 
+## Entry 021 — 2026-05-05
+**From:** Developer (manual commits)
+**To:** BMAD Orchestrator / TQE
+**Artifacts:** 20 commits trên `main` (2026-05-02 → 2026-05-03), `PROJECT-CONTEXT.md` synced
+**Status:** ✅ CONTEXT SYNCED — sẵn sàng cho TQE
+
+### Summary
+20 commits thủ công sau Sprint 8-F1, không qua BMAD workflow. Đã sync vào PROJECT-CONTEXT.md.
+
+**Backend (2 commits):**
+- `74791ee` — Sort tasks theo workflow order (`global_tasks.py`)
+- `03036e9` — Thêm `?search=` param vào `GET /ho` (`global_ho.py`)
+
+**Frontend — features mới:**
+- `85fdb92` — CBCQ click task từ /cong-viec → TaskDetail drawer
+- `7f78dd8` — Fix reload state sau khi đổi trạng thái task
+- `529ebcd` — **Tab mới "Tiến độ theo hộ"** trong hồ sơ detail (`ho-so-gpmb/[id]/page.tsx`, +245 lines)
+
+**Frontend — UI/UX polish (13 commits):**
+- Dashboard upgrade: recharts + statistic cards clickable
+- Active menu highlight, background, logo height, header layout
+- Scroll cho workflow tree; fix table colors, profile section
+- Workflow detail + workflow tree display fixes
+- /ho-dan header fix, layout relayout tổng thể (`layout.tsx`)
+
+**TypeScript:** 0 errors trên HEAD `529ebcd`
+
+### Open items
+- S8-F2 (task attachments) chưa implement
+- Chưa có TQE run cho Sprint 8-F1 + 20 commits này
+- Cần invoke `/tester-qe` để verify ke_toan/gddh task workflow + Tab "Tiến độ theo hộ" + regression
+
+---
+
 ## Entry 020 — 2026-05-01
 **From:** Tech Lead (Sprint 8-F1)
 **To:** Testing / Done
