@@ -41,6 +41,7 @@ export interface WorkflowNode {
   field_ghi_chu: boolean
   require_scan: boolean
   planned_days: number | null
+  is_parallel: boolean
   is_milestone: boolean
   legal_basis: string | null
   org_in_charge: string | null

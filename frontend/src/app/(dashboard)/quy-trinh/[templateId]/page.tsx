@@ -1,7 +1,7 @@
 'use client'
 import {
   Tree, Form, Input, InputNumber, Switch, Button, Typography,
-  notification, Spin, Space, Popconfirm, Card, Divider, List, Upload, Tag, Badge,
+  notification, Spin, Space, Popconfirm, Card, Divider, List, Upload, Tag, Badge, Checkbox,
 } from 'antd'
 import {
   PlusOutlined, DeleteOutlined, UploadOutlined, DownloadOutlined,
@@ -156,6 +156,9 @@ function buildTreeData(nodes: WorkflowNode[]): DataNode[] {
       <span>
         {n.code ? <Text type="secondary" style={{ fontSize: 12, marginRight: 4 }}>[{n.code}]</Text> : null}
         {n.name}
+        {n.is_parallel && (
+          <Tag color="cyan" style={{ marginLeft: 6, fontSize: 11, padding: '0 4px' }}>Song song</Tag>
+        )}
         {n.documents && n.documents.length > 0 && (
           <Tag color="blue" style={{ marginLeft: 6, fontSize: 11, padding: '0 4px' }}>
             {n.documents.length} tài liệu
@@ -221,6 +224,7 @@ export default function QuyTrinhDetailPage() {
           code: fresh.code,
           planned_days: fresh.planned_days,
           per_household: fresh.per_household,
+          is_parallel: fresh.is_parallel,
           field_so_vb: fresh.field_so_vb,
           field_ngay_vb: fresh.field_ngay_vb,
           field_loai_vb: fresh.field_loai_vb,
@@ -364,6 +368,7 @@ export default function QuyTrinhDetailPage() {
                       code: raw.code,
                       planned_days: raw.planned_days,
                       per_household: raw.per_household,
+                      is_parallel: raw.is_parallel,
                       field_so_vb: raw.field_so_vb,
                       field_ngay_vb: raw.field_ngay_vb,
                       field_loai_vb: raw.field_loai_vb,
@@ -415,8 +420,8 @@ export default function QuyTrinhDetailPage() {
                   <Input disabled={!isAdmin} />
                 </Form.Item>
 
-                {/* Mã bước + Thời gian + Theo từng hộ — cùng 1 hàng */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 16, alignItems: 'end' }}>
+                {/* Mã bước + Thời gian + Theo từng hộ + Song song — cùng 1 hàng */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: 16, alignItems: 'end' }}>
                   <Form.Item name="code" label="Mã bước">
                     <Input disabled={!isAdmin} />
                   </Form.Item>
@@ -425,6 +430,9 @@ export default function QuyTrinhDetailPage() {
                   </Form.Item>
                   <Form.Item name="per_household" label="Theo từng hộ" valuePropName="checked" style={{ marginBottom: 24 }}>
                     <Switch disabled={!isAdmin || parentPerHousehold} />
+                  </Form.Item>
+                  <Form.Item name="is_parallel" valuePropName="checked" label="Song song với các bước cùng cấp" style={{ marginBottom: 24 }}>
+                    <Checkbox disabled={!isAdmin} />
                   </Form.Item>
                 </div>
 

@@ -27,6 +27,11 @@ interface CongViecItem {
   ho_id: string | null
   ma_ho: string | null
   ten_chu_ho: string | null
+  planned_start_date: string | null
+  planned_end_date: string | null
+  actual_start_date: string | null
+  actual_end_date: string | null
+  tien_do: 'dung_tien_do' | 'cham_tien_do' | null
 }
 
 interface TasksResponse {
@@ -83,6 +88,45 @@ function buildColumns(page: number): ColumnsType<CongViecItem> {
       dataIndex: 'ten_cong_viec',
       key: 'ten_cong_viec',
       ellipsis: true,
+    },
+    {
+      title: 'Ngày BĐ DK',
+      dataIndex: 'planned_start_date',
+      key: 'planned_start_date',
+      width: 120,
+      render: (v: string | null) => v ? formatDate(v) : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Ngày KT DK',
+      dataIndex: 'planned_end_date',
+      key: 'planned_end_date',
+      width: 120,
+      render: (v: string | null) => v ? formatDate(v) : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Ngày BĐ TT',
+      dataIndex: 'actual_start_date',
+      key: 'actual_start_date',
+      width: 120,
+      render: (v: string | null) => v ? formatDate(v) : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Ngày KT TT',
+      dataIndex: 'actual_end_date',
+      key: 'actual_end_date',
+      width: 120,
+      render: (v: string | null) => v ? formatDate(v) : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'Tiến độ',
+      dataIndex: 'tien_do',
+      key: 'tien_do',
+      width: 130,
+      render: (v: CongViecItem['tien_do']) => {
+        if (v === 'dung_tien_do') return <Tag color="success">Đúng tiến độ</Tag>
+        if (v === 'cham_tien_do') return <Tag color="error">Chậm tiến độ</Tag>
+        return <span style={{ color: '#bbb' }}>—</span>
+      },
     },
     {
       title: 'Hộ',
@@ -260,7 +304,7 @@ function TatCaCongViecTabContent({ hoSoOptions }: { hoSoOptions: { value: string
               showSizeChanger: false,
             }}
             size="small"
-            scroll={{ x: 900 }}
+            scroll={{ x: 'max-content' }}
           />
         </div>
       )}
