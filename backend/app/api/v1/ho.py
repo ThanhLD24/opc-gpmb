@@ -67,16 +67,22 @@ class HoDatInfoCreate(BaseModel):
     ghi_chu: Optional[str] = None
 
 
+class HoDatInfoCreate(BaseModel):
+    loai_dat: str
+    so_thua: Optional[str] = None        # Số thửa (per parcel)
+    so_to_ban_do: Optional[str] = None   # Số tờ bản đồ
+    dien_tich: Optional[float] = None    # Diện tích thu hồi (m²)
+    ty_le_thu_hoi: Optional[float] = None  # Tỷ lệ thu hồi (%)
+    so_tien: Optional[float] = None      # Số tiền bồi thường (VNĐ)
+    ghi_chu: Optional[str] = None
+
+
 class HoCreate(BaseModel):
     ma_ho: str
     ten_chu_ho: str
     loai_doi_tuong: Optional[str] = None  # ca_nhan | to_chuc
     dia_chi: Optional[str] = None
     so_dien_thoai: Optional[str] = None
-    thua: Optional[str] = None  # Số thửa
-    so_to_ban_do: Optional[str] = None
-    dien_tich: Optional[float] = None
-    ty_le_thu_hoi: Optional[float] = None
     cccd: Optional[str] = None
     dkkd_mst: Optional[str] = None
     ghi_chu: Optional[str] = None
@@ -89,10 +95,6 @@ class HoUpdate(BaseModel):
     loai_doi_tuong: Optional[str] = None
     dia_chi: Optional[str] = None
     so_dien_thoai: Optional[str] = None
-    thua: Optional[str] = None
-    so_to_ban_do: Optional[str] = None
-    dien_tich: Optional[float] = None
-    ty_le_thu_hoi: Optional[float] = None
     cccd: Optional[str] = None
     dkkd_mst: Optional[str] = None
     ghi_chu: Optional[str] = None
@@ -103,6 +105,10 @@ def _dat_info_to_dict(d: HoDatInfo) -> Dict[str, Any]:
     return {
         "id": str(d.id),
         "loai_dat": d.loai_dat,
+        "so_thua": d.so_thua,
+        "so_to_ban_do": d.so_to_ban_do,
+        "dien_tich": d.dien_tich,
+        "ty_le_thu_hoi": d.ty_le_thu_hoi,
         "so_tien": d.so_tien,
         "ghi_chu": d.ghi_chu,
     }
@@ -117,16 +123,10 @@ def ho_to_dict(ho: Ho) -> Dict[str, Any]:
         "loai_doi_tuong": ho.loai_doi_tuong,
         "dia_chi": ho.dia_chi,
         "so_dien_thoai": ho.so_dien_thoai,
-        "thua": ho.thua,
-        "so_to_ban_do": ho.so_to_ban_do,
-        "dien_tich": ho.dien_tich,
-        "ty_le_thu_hoi": ho.ty_le_thu_hoi,
         "cccd": ho.cccd,
         "dkkd_mst": ho.dkkd_mst,
         "ghi_chu": ho.ghi_chu,
         "dat_info": [_dat_info_to_dict(d) for d in (ho.dat_info or [])],
-        # legacy field kept for compatibility (may be populated from old imports)
-        "loai_dat": ho.loai_dat,
         "status": ho.status.value,
         "created_at": ho.created_at.isoformat(),
         "updated_at": ho.updated_at.isoformat(),
@@ -234,10 +234,6 @@ async def create_ho(
         loai_doi_tuong=body.loai_doi_tuong,
         dia_chi=body.dia_chi,
         so_dien_thoai=body.so_dien_thoai,
-        thua=body.thua,
-        so_to_ban_do=body.so_to_ban_do,
-        dien_tich=body.dien_tich,
-        ty_le_thu_hoi=body.ty_le_thu_hoi,
         cccd=body.cccd,
         dkkd_mst=body.dkkd_mst,
         ghi_chu=body.ghi_chu,
@@ -247,7 +243,16 @@ async def create_ho(
     await db.flush()  # get ho.id before adding children
 
     for dat in (body.dat_info or []):
-        db.add(HoDatInfo(ho_id=ho.id, loai_dat=dat.loai_dat, so_tien=dat.so_tien, ghi_chu=dat.ghi_chu))
+        db.add(HoDatInfo(
+            ho_id=ho.id,
+            loai_dat=dat.loai_dat,
+            so_thua=dat.so_thua,
+            so_to_ban_do=dat.so_to_ban_do,
+            dien_tich=dat.dien_tich,
+            ty_le_thu_hoi=dat.ty_le_thu_hoi,
+            so_tien=dat.so_tien,
+            ghi_chu=dat.ghi_chu,
+        ))
 
     await db.commit()
     await db.refresh(ho)
@@ -486,6 +491,10 @@ async def update_ho(
             db.add(HoDatInfo(
                 ho_id=ho.id,
                 loai_dat=dat["loai_dat"],
+                so_thua=dat.get("so_thua"),
+                so_to_ban_do=dat.get("so_to_ban_do"),
+                dien_tich=dat.get("dien_tich"),
+                ty_le_thu_hoi=dat.get("ty_le_thu_hoi"),
                 so_tien=dat.get("so_tien"),
                 ghi_chu=dat.get("ghi_chu"),
             ))

@@ -65,7 +65,11 @@ export interface HoSo {
 export interface HoDatInfo {
   id: string
   loai_dat: string
-  so_tien: number | null
+  so_thua: string | null        // Số thửa (per parcel)
+  so_to_ban_do: string | null   // Số tờ bản đồ
+  dien_tich: number | null      // Diện tích thu hồi (m²)
+  ty_le_thu_hoi: number | null  // Tỷ lệ thu hồi (%)
+  so_tien: number | null        // Số tiền bồi thường (VNĐ)
   ghi_chu: string | null
 }
 
@@ -77,16 +81,10 @@ export interface Ho {
   loai_doi_tuong: string | null
   dia_chi: string | null
   so_dien_thoai: string | null
-  thua: string | null          // Số thửa
-  so_to_ban_do: string | null
-  dien_tich: number | null
-  ty_le_thu_hoi: number | null
   cccd: string | null
   dkkd_mst: string | null
   ghi_chu: string | null
   dat_info: HoDatInfo[]
-  // legacy — kept for backward compat
-  loai_dat: string | null
   status: HoStatus
   ly_do_kk: string | null
 }

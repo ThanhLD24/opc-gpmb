@@ -27,7 +27,7 @@ import ChiTraForm from '@/components/chi-tra/ChiTraForm'
 import HoImport from '@/components/ho/HoImport'
 import WorkflowTree from '@/components/task/WorkflowTree'
 import EditHoSoModal from '@/components/ho-so/EditHoSoModal'
-import EditHoModal from '@/components/ho/EditHoModal'
+import EditHoModal, { LOAI_DAT_OPTIONS, LOAI_DOI_TUONG_OPTIONS } from '@/components/ho/EditHoModal'
 import EditChiTraModal from '@/components/chi-tra/EditChiTraModal'
 import AuditTimeline from '@/components/chi-tra/AuditTimeline'
 import BanGiaoMatBangModal from '@/components/chi-tra/BanGiaoMatBangModal'
@@ -105,39 +105,6 @@ function ThongTinChung({ hoSo, refetch }: { hoSo: HoSo; refetch: () => void }) {
   )
 }
 
-// ─── Land type catalog (same list as backend) ─────────────────────────────────
-const LOAI_DAT_OPTIONS = [
-  { value: 'LUC', label: 'LUC — Đất trồng lúa nước' },
-  { value: 'LNC', label: 'LNC — Đất trồng lúa nương' },
-  { value: 'BHK', label: 'BHK — Đất bằng trồng cây hàng năm khác' },
-  { value: 'NHK', label: 'NHK — Đất nương rẫy trồng cây hàng năm khác' },
-  { value: 'CLN', label: 'CLN — Đất trồng cây lâu năm' },
-  { value: 'RSX', label: 'RSX — Đất rừng sản xuất' },
-  { value: 'RPH', label: 'RPH — Đất rừng phòng hộ' },
-  { value: 'RDD', label: 'RDD — Đất rừng đặc dụng' },
-  { value: 'NTS', label: 'NTS — Đất nuôi trồng thủy sản' },
-  { value: 'LMU', label: 'LMU — Đất làm muối' },
-  { value: 'NKH', label: 'NKH — Đất nông nghiệp khác' },
-  { value: 'ONT', label: 'ONT — Đất ở tại nông thôn' },
-  { value: 'ODT', label: 'ODT — Đất ở tại đô thị' },
-  { value: 'TSC', label: 'TSC — Đất xây dựng trụ sở cơ quan' },
-  { value: 'DTS', label: 'DTS — Đất xây dựng trụ sở tổ chức sự nghiệp' },
-  { value: 'SKC', label: 'SKC — Đất cơ sở sản xuất phi nông nghiệp' },
-  { value: 'SKS', label: 'SKS — Đất sử dụng cho hoạt động khoáng sản' },
-  { value: 'CSD', label: 'CSD — Đất sử dụng vào mục đích công cộng' },
-  { value: 'TIN', label: 'TIN — Đất tín ngưỡng' },
-  { value: 'TON', label: 'TON — Đất tôn giáo' },
-  { value: 'NTD', label: 'NTD — Đất nghĩa trang, nghĩa địa' },
-  { value: 'MNC', label: 'MNC — Đất có mặt nước chuyên dùng' },
-  { value: 'PNK', label: 'PNK — Đất phi nông nghiệp khác' },
-  { value: 'DCS', label: 'DCS — Đất chưa sử dụng' },
-]
-
-const LOAI_DOI_TUONG_OPTIONS = [
-  { value: 'ca_nhan', label: 'Cá nhân' },
-  { value: 'to_chuc', label: 'Tổ chức' },
-]
-
 // ─── Tab 2: Ho ───────────────────────────────────────────────────────────────
 function HoTab({ hoSoId }: { hoSoId: string }) {
   const queryClient = useQueryClient()
@@ -210,27 +177,28 @@ function HoTab({ hoSoId }: { hoSoId: string }) {
   const columns: ColumnsType<Ho> = [
     { title: 'STT', key: 'stt', width: 55, align: 'center', render: (_: unknown, __: Ho, index: number) => (page - 1) * 50 + index + 1 },
     { title: 'Mã hộ', dataIndex: 'ma_ho', key: 'ma_ho', width: 90 },
-    { title: 'Tên chủ hộ / tổ chức', dataIndex: 'ten_chu_ho', key: 'ten_chu_ho', width: 200, ellipsis: true },
-    { title: 'Loại ĐT', dataIndex: 'loai_doi_tuong', key: 'loai_doi_tuong', width: 90,
+    { title: 'Tên chủ hộ / tổ chức', dataIndex: 'ten_chu_ho', key: 'ten_chu_ho', width: 180, ellipsis: true },
+    { title: 'Loại ĐT', dataIndex: 'loai_doi_tuong', key: 'loai_doi_tuong', width: 85,
       render: (v: string | null) => v === 'to_chuc' ? 'Tổ chức' : v === 'ca_nhan' ? 'Cá nhân' : '—' },
-    { title: 'Địa chỉ', dataIndex: 'dia_chi', key: 'dia_chi', width: 150, ellipsis: true, render: (v: string | null) => v || '—' },
-    { title: 'Số thửa', dataIndex: 'thua', key: 'thua', width: 80, render: (v: string | null) => v || '—' },
-    { title: 'Tờ BĐ', dataIndex: 'so_to_ban_do', key: 'so_to_ban_do', width: 75, render: (v: string | null) => v || '—' },
+    { title: 'Địa chỉ', dataIndex: 'dia_chi', key: 'dia_chi', width: 140, ellipsis: true, render: (v: string | null) => v || '—' },
     {
-      title: 'DT (m²)',
-      dataIndex: 'dien_tich',
-      key: 'dien_tich',
-      width: 100,
-      align: 'right',
-      render: (v: number | null) => v != null ? v.toLocaleString('vi-VN') : '—',
-    },
-    {
-      title: 'Loại đất',
+      title: 'Thửa đất',
       key: 'dat_info',
-      width: 110,
+      width: 200,
       render: (_: unknown, record: Ho) => {
-        const codes = record.dat_info?.map(d => d.loai_dat).join(', ')
-        return codes || (record.loai_dat || '—')
+        if (!record.dat_info?.length) return '—'
+        return (
+          <div style={{ fontSize: 12, lineHeight: '18px' }}>
+            {record.dat_info.map((d, i) => (
+              <div key={i}>
+                <strong>{d.loai_dat}</strong>
+                {d.so_thua ? ` · thửa ${d.so_thua}` : ''}
+                {d.dien_tich != null ? ` · ${d.dien_tich.toLocaleString('vi-VN')}m²` : ''}
+                {d.so_tien != null ? ` · ${(d.so_tien / 1e9).toFixed(1)}tỷ` : ''}
+              </div>
+            ))}
+          </div>
+        )
       },
     },
     {
@@ -326,10 +294,11 @@ function HoTab({ hoSoId }: { hoSoId: string }) {
         open={modalOpen}
         onCancel={() => { setModalOpen(false); form.resetFields() }}
         footer={null}
-        width={700}
-        styles={{ body: { maxHeight: '75vh', overflowY: 'auto', paddingRight: 8 } }}
+        width={720}
+        styles={{ body: { maxHeight: '78vh', overflowY: 'auto', paddingRight: 8 } }}
       >
         <Form form={form} layout="vertical" onFinish={(v) => createMutation.mutate(v)}>
+          {/* ── Thông tin hộ ────────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <Form.Item name="ma_ho" label="Mã hộ / tổ chức" rules={[{ required: true, message: 'Nhập mã hộ' }]}>
               <Input />
@@ -357,57 +326,84 @@ function HoTab({ hoSoId }: { hoSoId: string }) {
               <Input />
             </Form.Item>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Form.Item name="thua" label="Số thửa">
-              <Input />
-            </Form.Item>
-            <Form.Item name="so_to_ban_do" label="Số tờ bản đồ">
-              <Input />
-            </Form.Item>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Form.Item name="dien_tich" label="Diện tích thu hồi (m²)">
-              <InputNumber style={{ width: '100%' }} min={0} />
-            </Form.Item>
-            <Form.Item name="ty_le_thu_hoi" label="Tỷ lệ thu hồi (%)">
-              <InputNumber style={{ width: '100%' }} min={0} max={100} step={0.1} />
-            </Form.Item>
-          </div>
           <Form.Item name="ghi_chu" label="Ghi chú">
             <Input.TextArea rows={2} />
           </Form.Item>
 
-          <div style={{ marginBottom: 8, fontWeight: 500 }}>Thông tin loại đất</div>
+          {/* ── Thông tin thửa đất ──────────────────────────────── */}
+          <Divider orientation="left" style={{ marginTop: 4 }}>Thông tin thửa đất</Divider>
+
           <Form.List name="dat_info">
             {(fields, { add, remove }) => (
               <>
                 {fields.map(({ key, name, ...restField }) => (
-                  <div key={key} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'loai_dat']}
-                      rules={[{ required: true, message: 'Chọn loại đất' }]}
-                      style={{ marginBottom: 0 }}
-                    >
-                      <Select options={LOAI_DAT_OPTIONS} placeholder="Loại đất" showSearch optionFilterProp="label" />
-                    </Form.Item>
-                    <Form.Item {...restField} name={[name, 'so_tien']} style={{ marginBottom: 0 }}>
-                      <InputNumber style={{ width: '100%' }} placeholder="Số tiền (VNĐ)" min={0} step={1000000} />
-                    </Form.Item>
-                    <Form.Item {...restField} name={[name, 'ghi_chu']} style={{ marginBottom: 0 }}>
-                      <Input placeholder="Ghi chú" />
-                    </Form.Item>
-                    <Button type="text" danger icon={<MinusCircleOutlined />} onClick={() => remove(name)} style={{ marginTop: 4 }} />
+                  <div
+                    key={key}
+                    style={{
+                      border: '1px solid #f0f0f0',
+                      borderRadius: 8,
+                      padding: '12px 12px 4px',
+                      marginBottom: 12,
+                      background: '#fafafa',
+                    }}
+                  >
+                    {/* Row 1: Loại đất + Số thửa + Số tờ BĐ */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10 }}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'loai_dat']}
+                        label="Loại đất"
+                        rules={[{ required: true, message: 'Chọn loại đất' }]}
+                        style={{ marginBottom: 10 }}
+                      >
+                        <Select options={LOAI_DAT_OPTIONS} placeholder="Chọn loại đất" showSearch optionFilterProp="label" />
+                      </Form.Item>
+                      <Form.Item {...restField} name={[name, 'so_thua']} label="Số thửa" style={{ marginBottom: 10 }}>
+                        <Input placeholder="VD: 123" />
+                      </Form.Item>
+                      <Form.Item {...restField} name={[name, 'so_to_ban_do']} label="Số tờ bản đồ" style={{ marginBottom: 10 }}>
+                        <Input placeholder="VD: 05" />
+                      </Form.Item>
+                    </div>
+
+                    {/* Row 2: Diện tích + Tỷ lệ + Số tiền */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                      <Form.Item {...restField} name={[name, 'dien_tich']} label="Diện tích thu hồi (m²)" style={{ marginBottom: 10 }}>
+                        <InputNumber style={{ width: '100%' }} min={0} placeholder="m²" />
+                      </Form.Item>
+                      <Form.Item {...restField} name={[name, 'ty_le_thu_hoi']} label="Tỷ lệ thu hồi (%)" style={{ marginBottom: 10 }}>
+                        <InputNumber style={{ width: '100%' }} min={0} max={100} step={0.1} placeholder="%" />
+                      </Form.Item>
+                      <Form.Item {...restField} name={[name, 'so_tien']} label="Số tiền bồi thường (VNĐ)" style={{ marginBottom: 10 }}>
+                        <InputNumber style={{ width: '100%' }} min={0} step={1000000} placeholder="VNĐ" />
+                      </Form.Item>
+                    </div>
+
+                    {/* Row 3: Ghi chú + nút xóa */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, alignItems: 'flex-start' }}>
+                      <Form.Item {...restField} name={[name, 'ghi_chu']} label="Ghi chú" style={{ marginBottom: 10 }}>
+                        <Input placeholder="Ghi chú cho thửa đất này" />
+                      </Form.Item>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<MinusCircleOutlined />}
+                        onClick={() => remove(name)}
+                        style={{ marginTop: 30 }}
+                      >
+                        Xóa
+                      </Button>
+                    </div>
                   </div>
                 ))}
                 <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} style={{ width: '100%', marginBottom: 16 }}>
-                  Thêm loại đất
+                  Thêm thửa đất
                 </Button>
               </>
             )}
           </Form.List>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
             <Button onClick={() => { setModalOpen(false); form.resetFields() }}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={createMutation.isPending}>Thêm hộ</Button>
           </div>
@@ -542,10 +538,13 @@ function PivotTab({ hoSoId }: { hoSoId: string }) {
           ho_so_id: hoSoId,
           ma_ho: row.ma_ho,
           ten_chu_ho: row.ten_chu_ho,
+          loai_doi_tuong: null,
           dia_chi: null,
-          thua: null,
-          loai_dat: null,
-          dien_tich: null,
+          so_dien_thoai: null,
+          cccd: null,
+          dkkd_mst: null,
+          ghi_chu: null,
+          dat_info: [],
           status: row.ho_status,
           ly_do_kk: null,
         },

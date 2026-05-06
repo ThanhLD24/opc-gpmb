@@ -295,14 +295,12 @@ class Ho(Base):
     loai_doi_tuong: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # ca_nhan | to_chuc
     dia_chi: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     so_dien_thoai: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    thua: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Số thửa
-    so_to_ban_do: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    dien_tich: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    ty_le_thu_hoi: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     cccd: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     dkkd_mst: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     ghi_chu: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    # loai_dat is now in HoDatInfo child table (kept nullable for legacy rows)
+    # ── Deprecated columns — kept for legacy seed data, not exposed in API ──
+    thua: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    dien_tich: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     loai_dat: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     status: Mapped[HoStatusEnum] = mapped_column(
         SAEnum(HoStatusEnum), nullable=False, default=HoStatusEnum.moi
@@ -347,6 +345,10 @@ class HoDatInfo(Base):
         nullable=False,
     )
     loai_dat: Mapped[str] = mapped_column(String(20), nullable=False)
+    so_thua: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    so_to_ban_do: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    dien_tich: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ty_le_thu_hoi: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     so_tien: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     ghi_chu: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

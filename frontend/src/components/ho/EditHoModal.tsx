@@ -1,5 +1,5 @@
 'use client'
-import { Modal, Form, Input, InputNumber, Button, notification, Select, Space } from 'antd'
+import { Modal, Form, Input, InputNumber, Button, notification, Select, Divider } from 'antd'
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
@@ -13,8 +13,7 @@ interface Props {
   onClose: () => void
 }
 
-// Vietnamese land type catalog (Luật Đất đai 2013/2024)
-const LOAI_DAT_OPTIONS = [
+export const LOAI_DAT_OPTIONS = [
   { value: 'LUC', label: 'LUC — Đất trồng lúa nước' },
   { value: 'LNC', label: 'LNC — Đất trồng lúa nương' },
   { value: 'BHK', label: 'BHK — Đất bằng trồng cây hàng năm khác' },
@@ -41,7 +40,7 @@ const LOAI_DAT_OPTIONS = [
   { value: 'DCS', label: 'DCS — Đất chưa sử dụng' },
 ]
 
-const LOAI_DOI_TUONG_OPTIONS = [
+export const LOAI_DOI_TUONG_OPTIONS = [
   { value: 'ca_nhan', label: 'Cá nhân' },
   { value: 'to_chuc', label: 'Tổ chức' },
 ]
@@ -59,15 +58,19 @@ export default function EditHoModal({ hoSoId, ho, open, onClose }: Props) {
         loai_doi_tuong: ho.loai_doi_tuong,
         dia_chi: ho.dia_chi,
         so_dien_thoai: ho.so_dien_thoai,
-        thua: ho.thua,
-        so_to_ban_do: ho.so_to_ban_do,
-        dien_tich: ho.dien_tich,
-        ty_le_thu_hoi: ho.ty_le_thu_hoi,
         cccd: ho.cccd,
         dkkd_mst: ho.dkkd_mst,
         ghi_chu: ho.ghi_chu,
         dat_info: ho.dat_info?.length
-          ? ho.dat_info.map(d => ({ loai_dat: d.loai_dat, so_tien: d.so_tien, ghi_chu: d.ghi_chu }))
+          ? ho.dat_info.map(d => ({
+              loai_dat: d.loai_dat,
+              so_thua: d.so_thua,
+              so_to_ban_do: d.so_to_ban_do,
+              dien_tich: d.dien_tich,
+              ty_le_thu_hoi: d.ty_le_thu_hoi,
+              so_tien: d.so_tien,
+              ghi_chu: d.ghi_chu,
+            }))
           : [],
       })
     }
@@ -100,12 +103,12 @@ export default function EditHoModal({ hoSoId, ho, open, onClose }: Props) {
       open={open}
       onCancel={handleClose}
       footer={null}
-      width={700}
-      styles={{ body: { maxHeight: '75vh', overflowY: 'auto', paddingRight: 8 } }}
+      width={720}
+      styles={{ body: { maxHeight: '78vh', overflowY: 'auto', paddingRight: 8 } }}
     >
       <Form form={form} layout="vertical" onFinish={(values) => updateMutation.mutate(values)}>
 
-        {/* Row 1: Mã hộ + Loại đối tượng */}
+        {/* ── Thông tin hộ ────────────────────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <Form.Item name="ma_ho" label="Mã hộ / tổ chức" rules={[{ required: true, message: 'Nhập mã hộ' }]}>
             <Input />
@@ -115,17 +118,14 @@ export default function EditHoModal({ hoSoId, ho, open, onClose }: Props) {
           </Form.Item>
         </div>
 
-        {/* Tên */}
         <Form.Item name="ten_chu_ho" label="Tên chủ hộ / tổ chức" rules={[{ required: true, message: 'Nhập tên' }]}>
           <Input />
         </Form.Item>
 
-        {/* Địa chỉ */}
         <Form.Item name="dia_chi" label="Địa chỉ">
           <Input />
         </Form.Item>
 
-        {/* Row: SĐT + CCCD */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <Form.Item name="so_dien_thoai" label="Số điện thoại">
             <Input />
@@ -135,88 +135,96 @@ export default function EditHoModal({ hoSoId, ho, open, onClose }: Props) {
           </Form.Item>
         </div>
 
-        {/* ĐKKD/MST — chỉ hiện nếu loại đối tượng là tổ chức */}
         {loaiDoiTuong === 'to_chuc' && (
           <Form.Item name="dkkd_mst" label="Số ĐKKD / MST">
             <Input />
           </Form.Item>
         )}
 
-        {/* Row: Số thửa + Số tờ bản đồ */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Form.Item name="thua" label="Số thửa">
-            <Input />
-          </Form.Item>
-          <Form.Item name="so_to_ban_do" label="Số tờ bản đồ">
-            <Input />
-          </Form.Item>
-        </div>
-
-        {/* Row: Diện tích + Tỷ lệ thu hồi */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Form.Item name="dien_tich" label="Diện tích thu hồi (m²)">
-            <InputNumber style={{ width: '100%' }} min={0} />
-          </Form.Item>
-          <Form.Item name="ty_le_thu_hoi" label="Tỷ lệ thu hồi (%)">
-            <InputNumber style={{ width: '100%' }} min={0} max={100} step={0.1} />
-          </Form.Item>
-        </div>
-
-        {/* Ghi chú */}
         <Form.Item name="ghi_chu" label="Ghi chú">
           <Input.TextArea rows={2} />
         </Form.Item>
 
-        {/* Thông tin loại đất */}
-        <div style={{ marginBottom: 8, fontWeight: 500 }}>Thông tin loại đất</div>
+        {/* ── Thông tin thửa đất ──────────────────────────────── */}
+        <Divider orientation="left" style={{ marginTop: 4 }}>Thông tin thửa đất</Divider>
+
         <Form.List name="dat_info">
           {(fields, { add, remove }) => (
             <>
               {fields.map(({ key, name, ...restField }) => (
-                <div key={key} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
-                  <Form.Item
-                    {...restField}
-                    name={[name, 'loai_dat']}
-                    rules={[{ required: true, message: 'Chọn loại đất' }]}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Select
-                      options={LOAI_DAT_OPTIONS}
-                      placeholder="Loại đất"
-                      showSearch
-                      optionFilterProp="label"
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    {...restField}
-                    name={[name, 'so_tien']}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <InputNumber style={{ width: '100%' }} placeholder="Số tiền (VNĐ)" min={0} step={1000000} />
-                  </Form.Item>
-                  <Form.Item
-                    {...restField}
-                    name={[name, 'ghi_chu']}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Input placeholder="Ghi chú" />
-                  </Form.Item>
-                  <Button
-                    type="text"
-                    danger
-                    icon={<MinusCircleOutlined />}
-                    onClick={() => remove(name)}
-                    style={{ marginTop: 4 }}
-                  />
+                <div
+                  key={key}
+                  style={{
+                    border: '1px solid #f0f0f0',
+                    borderRadius: 8,
+                    padding: '12px 12px 4px',
+                    marginBottom: 12,
+                    background: '#fafafa',
+                    position: 'relative',
+                  }}
+                >
+                  {/* Row 1: Loại đất + Số thửa + Số tờ BĐ */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10 }}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'loai_dat']}
+                      label="Loại đất"
+                      rules={[{ required: true, message: 'Chọn loại đất' }]}
+                      style={{ marginBottom: 10 }}
+                    >
+                      <Select
+                        options={LOAI_DAT_OPTIONS}
+                        placeholder="Chọn loại đất"
+                        showSearch
+                        optionFilterProp="label"
+                      />
+                    </Form.Item>
+                    <Form.Item {...restField} name={[name, 'so_thua']} label="Số thửa" style={{ marginBottom: 10 }}>
+                      <Input placeholder="VD: 123" />
+                    </Form.Item>
+                    <Form.Item {...restField} name={[name, 'so_to_ban_do']} label="Số tờ bản đồ" style={{ marginBottom: 10 }}>
+                      <Input placeholder="VD: 05" />
+                    </Form.Item>
+                  </div>
+
+                  {/* Row 2: Diện tích + Tỷ lệ + Số tiền */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                    <Form.Item {...restField} name={[name, 'dien_tich']} label="Diện tích thu hồi (m²)" style={{ marginBottom: 10 }}>
+                      <InputNumber style={{ width: '100%' }} min={0} placeholder="m²" />
+                    </Form.Item>
+                    <Form.Item {...restField} name={[name, 'ty_le_thu_hoi']} label="Tỷ lệ thu hồi (%)" style={{ marginBottom: 10 }}>
+                      <InputNumber style={{ width: '100%' }} min={0} max={100} step={0.1} placeholder="%" />
+                    </Form.Item>
+                    <Form.Item {...restField} name={[name, 'so_tien']} label="Số tiền bồi thường (VNĐ)" style={{ marginBottom: 10 }}>
+                      <InputNumber style={{ width: '100%' }} min={0} step={1000000} placeholder="VNĐ" />
+                    </Form.Item>
+                  </div>
+
+                  {/* Row 3: Ghi chú + nút xóa */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, alignItems: 'flex-start' }}>
+                    <Form.Item {...restField} name={[name, 'ghi_chu']} label="Ghi chú" style={{ marginBottom: 10 }}>
+                      <Input placeholder="Ghi chú cho thửa đất này" />
+                    </Form.Item>
+                    <Button
+                      type="text"
+                      danger
+                      icon={<MinusCircleOutlined />}
+                      onClick={() => remove(name)}
+                      style={{ marginTop: 30 }}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
                 </div>
               ))}
+
               <Button
                 type="dashed"
                 onClick={() => add()}
                 icon={<PlusOutlined />}
                 style={{ width: '100%', marginBottom: 16 }}
               >
-                Thêm loại đất
+                Thêm thửa đất
               </Button>
             </>
           )}
