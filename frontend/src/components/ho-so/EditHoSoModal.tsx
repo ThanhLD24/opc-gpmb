@@ -89,10 +89,10 @@ export default function EditHoSoModal({ hoSo, open, onClose }: Props) {
           />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Form.Item name="ngay_bat_dau" label="Ngày bắt đầu">
+          <Form.Item name="ngay_bat_dau" label="Ngày bắt đầu dự kiến">
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="DD/MM/YYYY" />
           </Form.Item>
-          <Form.Item name="ngay_ket_thuc" label="Ngày kết thúc">
+          <Form.Item name="ngay_ket_thuc" label="Ngày kết thúc dự kiến">
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="DD/MM/YYYY" />
           </Form.Item>
         </div>

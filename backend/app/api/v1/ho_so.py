@@ -362,6 +362,7 @@ async def update_ho_so(
         raise HTTPException(status_code=404, detail="Hồ sơ không tồn tại")
 
     update_data = body.model_dump(exclude_none=True)
+    ngay_bat_dau_changed = False
     if "name" in update_data:
         ho_so.name = update_data["name"]
     if "dia_chi" in update_data:
@@ -369,11 +370,20 @@ async def update_ho_so(
     if "cbcq_id" in update_data:
         ho_so.cbcq_id = uuid.UUID(update_data["cbcq_id"]) if update_data["cbcq_id"] else None
     if "ngay_bat_dau" in update_data:
-        ho_so.ngay_bat_dau = date.fromisoformat(update_data["ngay_bat_dau"]) if update_data["ngay_bat_dau"] else None
+        new_ngay_bat_dau = date.fromisoformat(update_data["ngay_bat_dau"]) if update_data["ngay_bat_dau"] else None
+        if new_ngay_bat_dau != ho_so.ngay_bat_dau:
+            ngay_bat_dau_changed = True
+        ho_so.ngay_bat_dau = new_ngay_bat_dau
     if "ngay_ket_thuc" in update_data:
         ho_so.ngay_ket_thuc = date.fromisoformat(update_data["ngay_ket_thuc"]) if update_data["ngay_ket_thuc"] else None
 
     ho_so.updated_at = datetime.utcnow()
+
+    # Auto-recalculate planned dates when ngay_bat_dau changes
+    if ngay_bat_dau_changed:
+        await calculate_planned_dates(ho_so.id, db)
+        await _set_initial_actual_start(ho_so.id, ho_so.ngay_bat_dau, db)
+
     await db.commit()
 
     result = await db.execute(
