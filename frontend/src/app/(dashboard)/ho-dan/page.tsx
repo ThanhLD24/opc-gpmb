@@ -14,14 +14,20 @@ const { Title } = Typography
 interface HoDanItem {
   id: string
   ho_so_id: string
+  ma_ho: string
   ho_so_code: string
   ho_so_name: string
   ten_chu_ho: string
+  loai_doi_tuong: string | null
   dia_chi: string | null
-  dien_tich: number | null
+  so_dien_thoai: string | null
   trang_thai: string
   trang_thai_label: string
   cbcq_name: string | null
+  dat_count: number
+  tong_dien_tich: number | null
+  tong_so_tien: number | null
+  loai_dat_list: string
 }
 
 interface HoDanResponse {
@@ -125,45 +131,91 @@ function HoDanContent() {
     {
       title: 'STT',
       key: 'stt',
-      width: 60,
+      width: 50,
       align: 'center',
       render: (_: unknown, __: HoDanItem, index: number) => (page - 1) * 20 + index + 1,
     },
     {
       title: 'Hồ sơ',
       key: 'ho_so',
-      width: 200,
+      width: 180,
       render: (_: unknown, record: HoDanItem) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: 12, color: '#9B1B30' }}>{record.ho_so_code}</div>
-          <div style={{ fontSize: 12, color: '#555' }}>{record.ho_so_name}</div>
+          <div style={{ fontSize: 11, color: '#777', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{record.ho_so_name}</div>
         </div>
       ),
     },
     {
-      title: 'Tên chủ hộ',
-      dataIndex: 'ten_chu_ho',
-      key: 'ten_chu_ho',
-      ellipsis: true,
+      title: 'Mã hộ',
+      dataIndex: 'ma_ho',
+      key: 'ma_ho',
+      width: 80,
+      render: (v: string) => <span style={{ fontWeight: 600, fontSize: 12 }}>{v}</span>,
     },
     {
-      title: 'Địa chỉ',
-      dataIndex: 'dia_chi',
-      key: 'dia_chi',
+      title: 'Chủ hộ / Tổ chức',
+      key: 'chu_ho',
       ellipsis: true,
+      render: (_: unknown, record: HoDanItem) => (
+        <div>
+          <div style={{ fontWeight: 500 }}>{record.ten_chu_ho}</div>
+          {record.loai_doi_tuong && (
+            <div style={{ fontSize: 11, color: '#888' }}>
+              {record.loai_doi_tuong === 'to_chuc' ? 'Tổ chức' : 'Cá nhân'}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
-      title: 'Diện tích (m²)',
-      dataIndex: 'dien_tich',
-      key: 'dien_tich',
-      width: 130,
-      align: 'right',
-      render: (v: number | null) => (v != null ? v.toFixed(1) : '—'),
+      title: 'Liên hệ',
+      key: 'lien_he',
+      width: 160,
+      render: (_: unknown, record: HoDanItem) => (
+        <div style={{ fontSize: 12 }}>
+          {record.so_dien_thoai && <div>{record.so_dien_thoai}</div>}
+          {record.dia_chi && (
+            <div style={{ color: '#888', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              title={record.dia_chi}>{record.dia_chi}</div>
+          )}
+          {!record.so_dien_thoai && !record.dia_chi && '—'}
+        </div>
+      ),
+    },
+    {
+      title: 'Thửa đất',
+      key: 'dat_info',
+      width: 220,
+      render: (_: unknown, record: HoDanItem) => {
+        if (!record.dat_count) return <span style={{ color: '#bbb' }}>—</span>
+        const codes = record.loai_dat_list ? record.loai_dat_list.split(',') : []
+        return (
+          <div style={{ fontSize: 12, lineHeight: '18px' }}>
+            <div>
+              {codes.map((c, i) => (
+                <Tag key={i} style={{ marginBottom: 2, fontSize: 11 }}>{c.trim()}</Tag>
+              ))}
+            </div>
+            <div style={{ color: '#555', marginTop: 2 }}>
+              {record.tong_dien_tich != null && (
+                <span>{record.tong_dien_tich.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} m²</span>
+              )}
+              {record.tong_so_tien != null && record.tong_dien_tich != null && ' · '}
+              {record.tong_so_tien != null && (
+                <span style={{ fontWeight: 500, color: '#9B1B30' }}>
+                  {(record.tong_so_tien / 1_000_000_000).toFixed(2)} tỷ
+                </span>
+              )}
+            </div>
+          </div>
+        )
+      },
     },
     {
       title: 'Trạng thái',
       key: 'trang_thai',
-      width: 140,
+      width: 130,
       render: (_: unknown, record: HoDanItem) => (
         <Tag color={TRANG_THAI_COLORS[record.trang_thai] ?? 'default'}>
           {record.trang_thai_label}
@@ -174,7 +226,7 @@ function HoDanContent() {
       title: 'CBCQ',
       dataIndex: 'cbcq_name',
       key: 'cbcq_name',
-      width: 160,
+      width: 150,
       render: (v: string | null) => v ?? '—',
     },
   ]
@@ -261,7 +313,7 @@ function HoDanContent() {
             showSizeChanger: false,
           }}
           size="small"
-          scroll={{ x: 900 }}
+          scroll={{ x: 1100 }}
           onRow={(record) => ({
             onClick: () => router.push(`/ho-so-gpmb/${record.ho_so_id}`),
             style: { cursor: 'pointer' },
