@@ -91,12 +91,21 @@ Tab 6: Kế hoạch tháng
 | FE: 4 date columns + Tiến độ column in `/cong-viec` table | af03a74 | ✅ |
 | DB reseed after migration (schema+data reset) | manual | ✅ |
 
-## 🔴 Còn pending
+## 🟡 Còn pending — TQE verification
 
-| Item | Priority | Artifact |
+| Item | Priority | Status |
 |---|---|---|
-| **TQE Sprint 9** (test date logic, parallel group, progress evaluation) | 🔴 Must test | `docs/testing/sprint-9-results.md` (to be created) |
+| **BUG-S9-001** — children actual_start propagation | 🟡 Fixed, needs TQE | `docs/testing/bugs/BUG-S9-001.md` |
+| **BUG-S9-002** — node_to_dict_with_tasks missing is_parallel + dates | ✅ Fixed (95bbdde+) | `docs/testing/bugs/BUG-S9-002.md` |
 | **TQE Sprint 8-F1 + manual commits** (no sprint-8-results.md yet) | 🟡 Low priority | — |
+
+## ✅ Sprint 9-F1 Post-bug Fixes (2026-05-06)
+| Fix | Commit | Status |
+|---|---|---|
+| FE is_parallel checkbox — Tooltip blocking Form.Item binding | git log | ✅ |
+| FE ho-so form labels → "dự kiến" per logic_phancap | git log | ✅ |
+| BE PATCH /ho-so auto-trigger calculate_planned_dates on ngay_bat_dau change | git log | ✅ |
+| BE BUG-S9-001: _propagate_start_to_first_child_group() vertical propagation | git log | ✅ Fixed |
 
 ---
 
@@ -104,7 +113,8 @@ Tab 6: Kế hoạch tháng
 - Entry 020 (2026-05-01): Sprint 8-F1 COMPLETE
 - Entry 021 (2026-05-05): Sync 20 manual commits (2026-05-02 → 05-03) + Sprint 9 kickoff
 - Entry 022 (2026-05-05): Sprint 9 COMPLETE (BE 95bbdde + FE af03a74)
-- **Next step:** invoke `/tester-qe` to test Sprint 9
+- Entry 023 (2026-05-05): TQE Sprint 9 COMPLETE — 34/38 PASS, 2 bugs (BUG-S9-001, BUG-S9-002)
+- **Next step:** Tech Lead creates fix plans for BUG-S9-001 + BUG-S9-002
 
 ## TypeScript Build
 - **0 errors** (verified 2026-05-05 trên HEAD `af03a74`)
