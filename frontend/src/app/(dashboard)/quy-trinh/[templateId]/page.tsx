@@ -187,6 +187,9 @@ export default function QuyTrinhDetailPage() {
   const [exportLoading, setExportLoading] = useState(false)
   const [form] = Form.useForm()
 
+  // per_household=true → is_parallel always true (nodes assigned to multiple hộ are inherently parallel)
+  const perHouseholdValue = Form.useWatch('per_household', form) as boolean | undefined
+
   const handleExport = async () => {
     setExportLoading(true)
     try {
@@ -224,7 +227,8 @@ export default function QuyTrinhDetailPage() {
           code: fresh.code,
           planned_days: fresh.planned_days,
           per_household: fresh.per_household,
-          is_parallel: fresh.is_parallel,
+          // per_household nodes are always parallel — override stored value if needed
+          is_parallel: fresh.per_household ? true : fresh.is_parallel,
           field_so_vb: fresh.field_so_vb,
           field_ngay_vb: fresh.field_ngay_vb,
           field_loai_vb: fresh.field_loai_vb,
@@ -368,7 +372,8 @@ export default function QuyTrinhDetailPage() {
                       code: raw.code,
                       planned_days: raw.planned_days,
                       per_household: raw.per_household,
-                      is_parallel: raw.is_parallel,
+                      // per_household nodes are always parallel — override stored value if needed
+                      is_parallel: raw.per_household ? true : raw.is_parallel,
                       field_so_vb: raw.field_so_vb,
                       field_ngay_vb: raw.field_ngay_vb,
                       field_loai_vb: raw.field_loai_vb,
@@ -429,10 +434,23 @@ export default function QuyTrinhDetailPage() {
                     <InputNumber style={{ width: '100%' }} min={0} disabled={!isAdmin} />
                   </Form.Item>
                   <Form.Item name="per_household" label="Theo từng hộ" valuePropName="checked" style={{ marginBottom: 24 }}>
-                    <Switch disabled={!isAdmin || parentPerHousehold} />
+                    <Switch
+                      disabled={!isAdmin || parentPerHousehold}
+                      onChange={(checked) => {
+                        if (checked) form.setFieldValue('is_parallel', true)
+                      }}
+                    />
                   </Form.Item>
-                  <Form.Item name="is_parallel" valuePropName="checked" label="Song song với các bước cùng cấp" style={{ marginBottom: 24 }}>
-                    <Checkbox disabled={!isAdmin} />
+                  <Form.Item
+                    name="is_parallel"
+                    valuePropName="checked"
+                    label="Song song với các bước cùng cấp"
+                    style={{ marginBottom: 24 }}
+                  >
+                    <Checkbox
+                      disabled={!isAdmin || !!perHouseholdValue}
+                      title={perHouseholdValue ? 'Bước theo từng hộ mặc định là song song' : undefined}
+                    />
                   </Form.Item>
                 </div>
 
