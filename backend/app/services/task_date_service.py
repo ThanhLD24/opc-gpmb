@@ -238,10 +238,60 @@ async def set_actual_start_for_next(
     await db.flush()
 
 
+async def _propagate_start_to_first_child_group(
+    node_id: uuid.UUID,
+    ho_so_id: uuid.UUID,
+    db: AsyncSession,
+) -> None:
+    """
+    After a non-per_household node completes, set actual_start_date on the
+    TaskInstances belonging to its first child group (non-per_household children only).
+
+    Per-household children manage their own actual_start via household assignment logic.
+    Only the FIRST group is unlocked; subsequent groups wait for siblings to complete
+    (handled by set_actual_start_for_next horizontal propagation).
+    """
+    children_result = await db.execute(
+        select(HoSoWorkflowNode)
+        .where(
+            HoSoWorkflowNode.ho_so_id == ho_so_id,
+            HoSoWorkflowNode.parent_id == node_id,
+            HoSoWorkflowNode.per_household == False,  # noqa: E712
+        )
+        .order_by(HoSoWorkflowNode.order)
+    )
+    children = list(children_result.scalars().all())
+    if not children:
+        return
+
+    groups = _group_siblings(children)
+    if not groups:
+        return
+
+    first_group = groups[0]
+    today = date.today()
+    for child_node in first_group:
+        tasks_result = await db.execute(
+            select(TaskInstance).where(
+                TaskInstance.workflow_node_id == child_node.id,
+                TaskInstance.ho_so_id == ho_so_id,
+                TaskInstance.ho_id.is_(None),
+            )
+        )
+        child_tasks = list(tasks_result.scalars().all())
+        for t in child_tasks:
+            if t.actual_start_date is None:
+                t.actual_start_date = today
+
+    await db.flush()
+
+
 async def set_actual_end(task_instance_id: uuid.UUID, db: AsyncSession) -> None:
     """
     Mark a TaskInstance as ended (actual_end_date = today) and
-    trigger actual_start propagation for the next node.
+    trigger actual_start propagation for both:
+      1. this node's first child group (vertical — DOWN)
+      2. the next sibling group (horizontal — ACROSS)
     """
     task_result = await db.execute(
         select(TaskInstance).where(TaskInstance.id == task_instance_id)
@@ -253,4 +303,8 @@ async def set_actual_end(task_instance_id: uuid.UUID, db: AsyncSession) -> None:
     task.actual_end_date = date.today()
     await db.flush()
 
+    # Vertical propagation: unlock first child group of the completed node
+    await _propagate_start_to_first_child_group(task.workflow_node_id, task.ho_so_id, db)
+
+    # Horizontal propagation: unlock next sibling group (or parent's sibling)
     await set_actual_start_for_next(task.workflow_node_id, task.ho_so_id, db)
