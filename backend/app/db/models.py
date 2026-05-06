@@ -292,10 +292,18 @@ class Ho(Base):
     )
     ma_ho: Mapped[str] = mapped_column(String(50), nullable=False)
     ten_chu_ho: Mapped[str] = mapped_column(Text, nullable=False)
+    loai_doi_tuong: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # ca_nhan | to_chuc
     dia_chi: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    loai_dat: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    thua: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    so_dien_thoai: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    thua: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Số thửa
+    so_to_ban_do: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     dien_tich: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ty_le_thu_hoi: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    cccd: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    dkkd_mst: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    ghi_chu: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # loai_dat is now in HoDatInfo child table (kept nullable for legacy rows)
+    loai_dat: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     status: Mapped[HoStatusEnum] = mapped_column(
         SAEnum(HoStatusEnum), nullable=False, default=HoStatusEnum.moi
     )
@@ -314,10 +322,39 @@ class Ho(Base):
     scope_assignments: Mapped[List["NodeHouseholdScope"]] = relationship(
         "NodeHouseholdScope", back_populates="ho", cascade="all, delete-orphan"
     )
+    dat_info: Mapped[List["HoDatInfo"]] = relationship(
+        "HoDatInfo", back_populates="ho", cascade="all, delete-orphan",
+        order_by="HoDatInfo.created_at",
+    )
 
     __table_args__ = (
         UniqueConstraint("ho_so_id", "ma_ho", name="uq_ho_ho_so_ma"),
         Index("ix_ho_ho_so_id", "ho_so_id"),
+    )
+
+
+class HoDatInfo(Base):
+    """Land parcel records for a household — one Ho can have many HoDatInfo rows."""
+
+    __tablename__ = "ho_dat_info"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    ho_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ho.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    loai_dat: Mapped[str] = mapped_column(String(20), nullable=False)
+    so_tien: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ghi_chu: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    ho: Mapped["Ho"] = relationship("Ho", back_populates="dat_info")
+
+    __table_args__ = (
+        Index("ix_ho_dat_info_ho_id", "ho_id"),
     )
 
 

@@ -7,14 +7,15 @@ from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
+from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
 from ...db.session import get_db
-from ...db.models import Ho, HoSoGPMB, HoStatusEnum, TaskInstance, HoSoChiTra, User, RoleEnum
+from ...db.models import Ho, HoDatInfo, HoSoGPMB, HoStatusEnum, TaskInstance, HoSoChiTra, User, RoleEnum
 from ..deps import get_current_user, require_roles
 
 
@@ -26,22 +27,85 @@ router = APIRouter()
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
+# Vietnamese land type catalog (Luật Đất đai 2013 / 2024)
+LOAI_DAT_CATALOG: List[Dict[str, str]] = [
+    # Nhóm đất nông nghiệp
+    {"code": "LUC", "name": "Đất trồng lúa nước"},
+    {"code": "LNC", "name": "Đất trồng lúa nương"},
+    {"code": "BHK", "name": "Đất bằng trồng cây hàng năm khác"},
+    {"code": "NHK", "name": "Đất nương rẫy trồng cây hàng năm khác"},
+    {"code": "CLN", "name": "Đất trồng cây lâu năm"},
+    {"code": "RSX", "name": "Đất rừng sản xuất"},
+    {"code": "RPH", "name": "Đất rừng phòng hộ"},
+    {"code": "RDD", "name": "Đất rừng đặc dụng"},
+    {"code": "NTS", "name": "Đất nuôi trồng thủy sản"},
+    {"code": "LMU", "name": "Đất làm muối"},
+    {"code": "NKH", "name": "Đất nông nghiệp khác"},
+    # Nhóm đất phi nông nghiệp
+    {"code": "ONT", "name": "Đất ở tại nông thôn"},
+    {"code": "ODT", "name": "Đất ở tại đô thị"},
+    {"code": "TSC", "name": "Đất xây dựng trụ sở cơ quan"},
+    {"code": "DTS", "name": "Đất xây dựng trụ sở của tổ chức sự nghiệp"},
+    {"code": "SKC", "name": "Đất cơ sở sản xuất phi nông nghiệp"},
+    {"code": "SKS", "name": "Đất sử dụng cho hoạt động khoáng sản"},
+    {"code": "CSD", "name": "Đất sử dụng vào mục đích công cộng"},
+    {"code": "TIN", "name": "Đất tín ngưỡng"},
+    {"code": "TON", "name": "Đất tôn giáo"},
+    {"code": "NTD", "name": "Đất nghĩa trang, nghĩa địa"},
+    {"code": "MNC", "name": "Đất có mặt nước chuyên dùng"},
+    {"code": "PNK", "name": "Đất phi nông nghiệp khác"},
+    # Nhóm đất chưa sử dụng
+    {"code": "DCS", "name": "Đất chưa sử dụng"},
+]
+
+VALID_LOAI_DAT_CODES = {item["code"] for item in LOAI_DAT_CATALOG}
+
+
+class HoDatInfoCreate(BaseModel):
+    loai_dat: str
+    so_tien: Optional[float] = None
+    ghi_chu: Optional[str] = None
+
+
 class HoCreate(BaseModel):
     ma_ho: str
     ten_chu_ho: str
+    loai_doi_tuong: Optional[str] = None  # ca_nhan | to_chuc
     dia_chi: Optional[str] = None
-    loai_dat: Optional[str] = None
-    thua: Optional[str] = None
+    so_dien_thoai: Optional[str] = None
+    thua: Optional[str] = None  # Số thửa
+    so_to_ban_do: Optional[str] = None
     dien_tich: Optional[float] = None
+    ty_le_thu_hoi: Optional[float] = None
+    cccd: Optional[str] = None
+    dkkd_mst: Optional[str] = None
+    ghi_chu: Optional[str] = None
+    dat_info: Optional[List[HoDatInfoCreate]] = None
 
 
 class HoUpdate(BaseModel):
     ma_ho: Optional[str] = None
-    loai_dat: Optional[str] = None
     ten_chu_ho: Optional[str] = None
+    loai_doi_tuong: Optional[str] = None
     dia_chi: Optional[str] = None
+    so_dien_thoai: Optional[str] = None
     thua: Optional[str] = None
+    so_to_ban_do: Optional[str] = None
     dien_tich: Optional[float] = None
+    ty_le_thu_hoi: Optional[float] = None
+    cccd: Optional[str] = None
+    dkkd_mst: Optional[str] = None
+    ghi_chu: Optional[str] = None
+    dat_info: Optional[List[HoDatInfoCreate]] = None  # replaces all existing dat_info if provided
+
+
+def _dat_info_to_dict(d: HoDatInfo) -> Dict[str, Any]:
+    return {
+        "id": str(d.id),
+        "loai_dat": d.loai_dat,
+        "so_tien": d.so_tien,
+        "ghi_chu": d.ghi_chu,
+    }
 
 
 def ho_to_dict(ho: Ho) -> Dict[str, Any]:
@@ -50,10 +114,19 @@ def ho_to_dict(ho: Ho) -> Dict[str, Any]:
         "ho_so_id": str(ho.ho_so_id),
         "ma_ho": ho.ma_ho,
         "ten_chu_ho": ho.ten_chu_ho,
+        "loai_doi_tuong": ho.loai_doi_tuong,
         "dia_chi": ho.dia_chi,
-        "loai_dat": ho.loai_dat,
-        "thua": str(ho.thua) if ho.thua else None,
+        "so_dien_thoai": ho.so_dien_thoai,
+        "thua": ho.thua,
+        "so_to_ban_do": ho.so_to_ban_do,
         "dien_tich": ho.dien_tich,
+        "ty_le_thu_hoi": ho.ty_le_thu_hoi,
+        "cccd": ho.cccd,
+        "dkkd_mst": ho.dkkd_mst,
+        "ghi_chu": ho.ghi_chu,
+        "dat_info": [_dat_info_to_dict(d) for d in (ho.dat_info or [])],
+        # legacy field kept for compatibility (may be populated from old imports)
+        "loai_dat": ho.loai_dat,
         "status": ho.status.value,
         "created_at": ho.created_at.isoformat(),
         "updated_at": ho.updated_at.isoformat(),
@@ -72,6 +145,26 @@ async def _get_ho_so_or_404(ho_so_id: str, db: AsyncSession) -> HoSoGPMB:
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
+@router.get("/{ho_so_id}/ho/{ho_id}")
+async def get_ho(
+    ho_so_id: str,
+    ho_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await _get_ho_so_or_404(ho_so_id, db)
+    result = await db.execute(
+        select(Ho).options(selectinload(Ho.dat_info)).where(
+            Ho.id == uuid.UUID(ho_id),
+            Ho.ho_so_id == uuid.UUID(ho_so_id),
+        )
+    )
+    ho = result.scalar_one_or_none()
+    if ho is None:
+        raise HTTPException(status_code=404, detail="Hộ không tồn tại")
+    return ho_to_dict(ho)
+
+
 @router.get("/{ho_so_id}/ho")
 async def list_ho(
     ho_so_id: str,
@@ -84,7 +177,7 @@ async def list_ho(
 ):
     await _get_ho_so_or_404(ho_so_id, db)
 
-    q = select(Ho).where(Ho.ho_so_id == uuid.UUID(ho_so_id))
+    q = select(Ho).options(selectinload(Ho.dat_info)).where(Ho.ho_so_id == uuid.UUID(ho_so_id))
     if status:
         try:
             status_enum = HoStatusEnum(status)
@@ -96,7 +189,9 @@ async def list_ho(
             Ho.ten_chu_ho.ilike(f"%{search}%") | Ho.ma_ho.ilike(f"%{search}%")
         )
 
-    count_result = await db.execute(select(func.count()).select_from(q.subquery()))
+    count_result = await db.execute(select(func.count()).select_from(
+        select(Ho).where(Ho.ho_so_id == uuid.UUID(ho_so_id)).subquery()
+    ))
     total = count_result.scalar()
 
     q = q.order_by(Ho.ma_ho).offset((page - 1) * page_size).limit(page_size)
@@ -136,15 +231,29 @@ async def create_ho(
         ho_so_id=uuid.UUID(ho_so_id),
         ma_ho=body.ma_ho,
         ten_chu_ho=body.ten_chu_ho,
+        loai_doi_tuong=body.loai_doi_tuong,
         dia_chi=body.dia_chi,
-        loai_dat=body.loai_dat,
+        so_dien_thoai=body.so_dien_thoai,
         thua=body.thua,
+        so_to_ban_do=body.so_to_ban_do,
         dien_tich=body.dien_tich,
+        ty_le_thu_hoi=body.ty_le_thu_hoi,
+        cccd=body.cccd,
+        dkkd_mst=body.dkkd_mst,
+        ghi_chu=body.ghi_chu,
         status=HoStatusEnum.moi,
     )
     db.add(ho)
+    await db.flush()  # get ho.id before adding children
+
+    for dat in (body.dat_info or []):
+        db.add(HoDatInfo(ho_id=ho.id, loai_dat=dat.loai_dat, so_tien=dat.so_tien, ghi_chu=dat.ghi_chu))
+
     await db.commit()
     await db.refresh(ho)
+    # reload dat_info
+    result2 = await db.execute(select(Ho).options(selectinload(Ho.dat_info)).where(Ho.id == ho.id))
+    ho = result2.scalar_one()
     return ho_to_dict(ho)
 
 
@@ -363,13 +472,30 @@ async def update_ho(
         )
 
     update_data = body.model_dump(exclude_none=True)
+
+    # Handle dat_info replacement separately
+    new_dat_info = update_data.pop("dat_info", None)
+
     for field, value in update_data.items():
         setattr(ho, field, value)
+
+    if new_dat_info is not None:
+        # Delete all existing dat_info rows for this ho, then re-insert
+        await db.execute(delete(HoDatInfo).where(HoDatInfo.ho_id == ho.id))
+        for dat in new_dat_info:
+            db.add(HoDatInfo(
+                ho_id=ho.id,
+                loai_dat=dat["loai_dat"],
+                so_tien=dat.get("so_tien"),
+                ghi_chu=dat.get("ghi_chu"),
+            ))
 
     from datetime import datetime
     ho.updated_at = datetime.utcnow()
     await db.commit()
-    await db.refresh(ho)
+    # Reload with dat_info
+    result2 = await db.execute(select(Ho).options(selectinload(Ho.dat_info)).where(Ho.id == ho.id))
+    ho = result2.scalar_one()
     return ho_to_dict(ho)
 
 

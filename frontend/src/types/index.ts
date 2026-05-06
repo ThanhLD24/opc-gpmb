@@ -62,15 +62,31 @@ export interface HoSo {
   created_at: string
 }
 
+export interface HoDatInfo {
+  id: string
+  loai_dat: string
+  so_tien: number | null
+  ghi_chu: string | null
+}
+
 export interface Ho {
   id: string
   ho_so_id: string
   ma_ho: string
-  loai_dat: string | null
   ten_chu_ho: string
+  loai_doi_tuong: string | null
   dia_chi: string | null
-  thua: string | null
+  so_dien_thoai: string | null
+  thua: string | null          // Số thửa
+  so_to_ban_do: string | null
   dien_tich: number | null
+  ty_le_thu_hoi: number | null
+  cccd: string | null
+  dkkd_mst: string | null
+  ghi_chu: string | null
+  dat_info: HoDatInfo[]
+  // legacy — kept for backward compat
+  loai_dat: string | null
   status: HoStatus
   ly_do_kk: string | null
 }

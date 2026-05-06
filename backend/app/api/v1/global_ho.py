@@ -10,8 +10,15 @@ from sqlalchemy import select, func, and_
 from ...db.session import get_db
 from ...db.models import Ho, HoSoGPMB, User, HoStatusEnum, RoleEnum
 from ..deps import get_current_user
+from .ho import LOAI_DAT_CATALOG
 
 router = APIRouter()
+
+
+@router.get("/loai-dat-catalog")
+async def get_loai_dat_catalog(current_user: User = Depends(get_current_user)):
+    """Return the list of Vietnamese land type codes and names (Luật Đất đai)."""
+    return LOAI_DAT_CATALOG
 
 HO_STATUS_LABELS: dict[str, str] = {
     "moi": "Mới",
