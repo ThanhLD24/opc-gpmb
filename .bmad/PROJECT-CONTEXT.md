@@ -3,7 +3,7 @@
 **Project Name:** OPC (Odin Project Clearance)
 **Subtitle:** Phần mềm hỗ trợ điều hành Giải phóng mặt bằng (GPMB)
 **Phase:** Post-Demo — Active Development
-**Demo:** ✅ 2026-05-02 COMPLETED | **Last sync:** 2026-05-05
+**Demo:** ✅ 2026-05-02 COMPLETED | **Last sync:** 2026-05-08
 
 ## Tech Stack ✅ CONFIRMED + RUNNING
 - **FE:** Next.js 14 (App Router) + TypeScript + Ant Design 5 → port 3000
@@ -12,7 +12,7 @@
 - **Auth:** JWT (python-jose + passlib[bcrypt==4.0.1])
 - **PDF:** reportlab 4.2.5 (kế hoạch tháng export)
 - **Excel:** openpyxl (import hộ, pivot export)
-- **Git:** ✅ Initialized (34 commits on `main`)
+- **Git:** ✅ Initialized (~43 commits on `main`)
 
 ## Credentials Demo
 - admin / Admin@123
@@ -22,7 +22,7 @@
 
 ---
 
-## Implementation Status — 2026-05-05 (HEAD: 529ebcd)
+## Implementation Status — 2026-05-08 (HEAD: 9d9b60a)
 
 ### ✅ DONE — Tất cả Sprint 1–8 + UI Polish
 
@@ -91,21 +91,42 @@ Tab 6: Kế hoạch tháng
 | FE: 4 date columns + Tiến độ column in `/cong-viec` table | af03a74 | ✅ |
 | DB reseed after migration (schema+data reset) | manual | ✅ |
 
-## 🟡 Còn pending — TQE verification
-
-| Item | Priority | Status |
-|---|---|---|
-| **BUG-S9-001** — children actual_start propagation | 🟡 Fixed, needs TQE | `docs/testing/bugs/BUG-S9-001.md` |
-| **BUG-S9-002** — node_to_dict_with_tasks missing is_parallel + dates | ✅ Fixed (95bbdde+) | `docs/testing/bugs/BUG-S9-002.md` |
-| **TQE Sprint 8-F1 + manual commits** (no sprint-8-results.md yet) | 🟡 Low priority | — |
-
 ## ✅ Sprint 9-F1 Post-bug Fixes (2026-05-06)
 | Fix | Commit | Status |
 |---|---|---|
 | FE is_parallel checkbox — Tooltip blocking Form.Item binding | git log | ✅ |
 | FE ho-so form labels → "dự kiến" per logic_phancap | git log | ✅ |
 | BE PATCH /ho-so auto-trigger calculate_planned_dates on ngay_bat_dau change | git log | ✅ |
-| BE BUG-S9-001: _propagate_start_to_first_child_group() vertical propagation | git log | ✅ Fixed |
+| BE BUG-S9-001: _propagate_start_to_first_child_group() vertical propagation | f8d0206 | ✅ Fixed |
+| BE BUG-S9-002: node_to_dict_with_tasks expose is_parallel + planned_* dates | 95bbdde+ | ✅ Fixed |
+
+## ✅ Post-Sprint 9 — Hộ Entity Refactor (2026-05-06)
+| Feature | Commit | Status |
+|---|---|---|
+| Expand Hộ entity: 7 fields mới (loai_doi_tuong, so_dien_thoai, cccd, dkkd_mst, ghi_chu…) + bảng `ho_dat_info` | af2497c | ✅ |
+| Move land parcel fields từ Ho → HoDatInfo (so_thua, so_to_ban_do, dien_tich, ty_le_thu_hoi) + Alembic migration | b6dd992 | ✅ |
+| `/ho-dan` screen: thêm cột Mã hộ, Liên hệ, Thửa đất (aggregation subquery); seeded 749 ho_dat_info rows | 8231a16 | ✅ |
+
+## ✅ Post-Sprint 9 — TC-3b & UX Polish (2026-05-08)
+| Feature | Commit | Status |
+|---|---|---|
+| BE TC-3b fix: `_backfill_actual_start_if_ready()` — gán hộ sau prerequisite xong → backfill actual_start_date | 9d9b60a | ✅ |
+| FE `HoDetailDrawer`: drawer read-only xem chi tiết hộ (Descriptions + Table HoDatInfo) — dùng chung 2 màn | 9d9b60a | ✅ |
+| FE `/ho-dan`: eye button mở HoDetailDrawer (stopPropagation so row-click vẫn navigate) | 9d9b60a | ✅ |
+| FE HoTab: eye button mở HoDetailDrawer; "Đã thống nhất" text → CheckOutlined icon + Tooltip | 9d9b60a | ✅ |
+| FE HoTab: status column `Badge` → `Tag` (HO_STATUS_SHORT_LABELS) + `Tooltip` full text on hover | 9d9b60a | ✅ |
+| FE ChiTraTab: tất cả text/mixed action buttons → icon-only + Tooltip (SendOutlined, CheckOutlined, CloseOutlined, EditOutlined) | 9d9b60a | ✅ |
+| FE constants.ts: thêm `HO_STATUS_SHORT_LABELS` (text ngắn cho Tag display) | 9d9b60a | ✅ |
+
+---
+
+## 🟡 Còn pending — TQE verification
+
+| Item | Priority | Status |
+|---|---|---|
+| **BUG-S9-001 + BUG-S9-002 fixes** | 🟡 Chờ TQE re-verify | `docs/testing/bugs/` |
+| **HoDatInfo refactor** (af2497c → 8231a16) | 🟡 Chờ TQE | — |
+| **TC-3b + UX Polish** (9d9b60a) | 🟡 Chờ TQE | — |
 
 ---
 
@@ -114,7 +135,8 @@ Tab 6: Kế hoạch tháng
 - Entry 021 (2026-05-05): Sync 20 manual commits (2026-05-02 → 05-03) + Sprint 9 kickoff
 - Entry 022 (2026-05-05): Sprint 9 COMPLETE (BE 95bbdde + FE af03a74)
 - Entry 023 (2026-05-05): TQE Sprint 9 COMPLETE — 34/38 PASS, 2 bugs (BUG-S9-001, BUG-S9-002)
-- **Next step:** Tech Lead creates fix plans for BUG-S9-001 + BUG-S9-002
+- Entry 024 (2026-05-06): Sprint 9-F1 bug fixes + HoDatInfo refactor (3 commits)
+- Entry 025 (2026-05-08): TC-3b backfill + HoDetailDrawer + UX polish (9d9b60a)
 
 ## TypeScript Build
-- **0 errors** (verified 2026-05-05 trên HEAD `af03a74`)
+- **0 errors** (verified 2026-05-05 trên HEAD `af03a74`; no new type errors introduced)
