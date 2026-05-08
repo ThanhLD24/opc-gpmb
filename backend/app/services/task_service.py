@@ -4,7 +4,7 @@ Task Service: business logic for task generation, scope assignment, rollup.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional
 
 from sqlalchemy import select, delete, func
@@ -19,6 +19,7 @@ from ..db.models import (
     Ho,
     HoStatusEnum,
 )
+from .task_date_service import _group_siblings
 
 
 async def _get_all_descendants(
@@ -71,6 +72,65 @@ async def generate_tasks_for_ho_so(ho_so_id: uuid.UUID, db: AsyncSession) -> int
             count += 1
     await db.flush()
     return count
+
+
+async def _backfill_actual_start_if_ready(
+    node: HoSoWorkflowNode,
+    ho_id: uuid.UUID,
+    ho_so_id: uuid.UUID,
+    db: AsyncSession,
+    task: TaskInstance,
+) -> None:
+    """
+    TC-3b: When a per-household TaskInstance is created after its sequential
+    prerequisites are already completed, backfill actual_start_date = today.
+
+    Checks the immediately preceding sibling group:
+    - Non-per-household predecessor: requires ho_id=None task to be hoan_thanh
+    - Per-household predecessor: requires this ho_id's task to be hoan_thanh
+    If there is no preceding sibling (first in parent), no backfill is applied
+    (the parent's actual_start propagation handles that case at creation time).
+    """
+    if node.parent_id is None:
+        return
+
+    # Load all siblings of this node, sorted by order
+    siblings_result = await db.execute(
+        select(HoSoWorkflowNode)
+        .where(
+            HoSoWorkflowNode.ho_so_id == ho_so_id,
+            HoSoWorkflowNode.parent_id == node.parent_id,
+        )
+        .order_by(HoSoWorkflowNode.order)
+    )
+    siblings = list(siblings_result.scalars().all())
+    groups = _group_siblings(siblings)
+
+    # Find which group contains this node
+    node_group_idx = next(
+        (i for i, g in enumerate(groups) if any(n.id == node.id for n in g)),
+        None,
+    )
+    if node_group_idx is None or node_group_idx == 0:
+        # No preceding sibling group — nothing to check
+        return
+
+    prev_group = groups[node_group_idx - 1]
+    for prev_node in prev_group:
+        check_ho_id = ho_id if prev_node.per_household else None
+        prev_task_result = await db.execute(
+            select(TaskInstance).where(
+                TaskInstance.workflow_node_id == prev_node.id,
+                TaskInstance.ho_so_id == ho_so_id,
+                TaskInstance.ho_id == check_ho_id,
+            )
+        )
+        prev_task = prev_task_result.scalar_one_or_none()
+        if prev_task is None or prev_task.status != TaskStatusEnum.hoan_thanh:
+            return  # predecessor not done — leave actual_start_date unset
+
+    # All predecessors are done: backfill actual_start_date
+    task.actual_start_date = date.today()
 
 
 async def assign_households_to_node(
@@ -132,6 +192,11 @@ async def assign_households_to_node(
                 )
                 db.add(task)
                 tasks_created += 1
+
+                # TC-3b: backfill actual_start_date if all preceding sequential
+                # siblings are already completed (household added after prerequisites done).
+                await db.flush()  # ensure task.id exists before we may reference it
+                await _backfill_actual_start_if_ready(ph_node, ho_id, ho_so_id, db, task)
 
     await db.flush()
     return {"assigned": len(ho_ids), "tasks_created": tasks_created}

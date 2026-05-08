@@ -1,11 +1,13 @@
 'use client'
-import { Input, Select, Space, Table, Tag, Typography } from 'antd'
+import { Button, Input, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { EyeOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { ColumnsType } from 'antd/es/table'
 import api from '@/lib/api'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import HoDetailDrawer from '@/components/ho/HoDetailDrawer'
 
 const { Title } = Typography
 
@@ -77,6 +79,7 @@ function HoDanContent() {
   )
   const [cbcqId, setCbcqId] = useState<string | undefined>()
   const [search, setSearch] = useState('')
+  const [detailRecord, setDetailRecord] = useState<{ hoSoId: string; hoId: string } | null>(null)
 
   // Load hồ sơ list for filter selects
   const { data: hoSoList } = useQuery<HoSoOption[]>({
@@ -229,6 +232,24 @@ function HoDanContent() {
       width: 150,
       render: (v: string | null) => v ?? '—',
     },
+    {
+      title: '',
+      key: 'action',
+      width: 48,
+      fixed: 'right' as const,
+      render: (_: unknown, record: HoDanItem) => (
+        <Tooltip title="Xem chi tiết hộ">
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={(e) => {
+              e.stopPropagation()
+              setDetailRecord({ hoSoId: record.ho_so_id, hoId: record.id })
+            }}
+          />
+        </Tooltip>
+      ),
+    },
   ]
 
   return (
@@ -299,6 +320,12 @@ function HoDanContent() {
 
       {/* Table */}
       <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #F0E8E8' }}>
+        <HoDetailDrawer
+          hoSoId={detailRecord?.hoSoId ?? ''}
+          hoId={detailRecord?.hoId ?? null}
+          open={!!detailRecord}
+          onClose={() => setDetailRecord(null)}
+        />
         <Table<HoDanItem>
           columns={columns}
           dataSource={data?.items ?? []}
@@ -313,7 +340,7 @@ function HoDanContent() {
             showSizeChanger: false,
           }}
           size="small"
-          scroll={{ x: 1100 }}
+          scroll={{ x: 1150 }}
           onRow={(record) => ({
             onClick: () => router.push(`/ho-so-gpmb/${record.ho_so_id}`),
             style: { cursor: 'pointer' },

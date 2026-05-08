@@ -18,6 +18,15 @@ export const HO_STATUS_LABELS: Record<string, string> = {
   da_ban_giao: 'Đã bàn giao mặt bằng',
 }
 
+/** Abbreviated labels for compact display (Tag, badge). Full text in HO_STATUS_LABELS. */
+export const HO_STATUS_SHORT_LABELS: Record<string, string> = {
+  moi: 'Mới',
+  dang_xu_ly: 'Đang xử lý',
+  da_thong_nhat: 'Đã thống nhất',
+  da_chi_tra: 'Đã chi trả',
+  da_ban_giao: 'Đã bàn giao',
+}
+
 export const HO_STATUS_COLORS: Record<string, string> = {
   moi: 'default',
   dang_xu_ly: 'processing',

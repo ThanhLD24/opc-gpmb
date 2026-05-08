@@ -1,13 +1,13 @@
 'use client'
 import {
   Tabs, Typography, Spin, notification, Button, Descriptions, Tag,
-  Table, Badge, Modal, Form, Input, Select, Space,
-  Popconfirm, DatePicker, InputNumber, Alert, Divider,
+  Table, Modal, Form, Input, Select, Space,
+  Popconfirm, DatePicker, InputNumber, Alert, Divider, Tooltip,
 } from 'antd'
 import {
   PlusOutlined, DownloadOutlined, UploadOutlined,
   CheckOutlined, CloseOutlined, EditOutlined, DeleteOutlined,
-  SendOutlined, KeyOutlined, MinusCircleOutlined,
+  SendOutlined, KeyOutlined, MinusCircleOutlined, EyeOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect, Suspense } from 'react'
@@ -18,7 +18,7 @@ import api from '@/lib/api'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { HoSo, Ho, TaskInstance, ChiTra, PaginatedResponse, PivotRow } from '@/types'
 import {
-  HO_STATUS_LABELS, HO_STATUS_COLORS,
+  HO_STATUS_LABELS, HO_STATUS_SHORT_LABELS, HO_STATUS_COLORS,
   CHI_TRA_STATUS_LABELS, CHI_TRA_STATUS_COLORS,
 } from '@/utils/constants'
 import { formatDate, formatVND } from '@/utils/format'
@@ -28,6 +28,7 @@ import HoImport from '@/components/ho/HoImport'
 import WorkflowTree from '@/components/task/WorkflowTree'
 import EditHoSoModal from '@/components/ho-so/EditHoSoModal'
 import EditHoModal, { LOAI_DAT_OPTIONS, LOAI_DOI_TUONG_OPTIONS } from '@/components/ho/EditHoModal'
+import HoDetailDrawer from '@/components/ho/HoDetailDrawer'
 import EditChiTraModal from '@/components/chi-tra/EditChiTraModal'
 import AuditTimeline from '@/components/chi-tra/AuditTimeline'
 import BanGiaoMatBangModal from '@/components/chi-tra/BanGiaoMatBangModal'
@@ -115,6 +116,8 @@ function HoTab({ hoSoId }: { hoSoId: string }) {
   const [importOpen, setImportOpen] = useState(false)
   const [editHoOpen, setEditHoOpen] = useState(false)
   const [selectedHo, setSelectedHo] = useState<Ho | null>(null)
+  const [detailHoId, setDetailHoId] = useState<string | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [form] = Form.useForm()
   const loaiDoiTuongCreate = Form.useWatch('loai_doi_tuong', form)
 
@@ -205,51 +208,63 @@ function HoTab({ hoSoId }: { hoSoId: string }) {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 160,
+      width: 130,
       render: (status: string) => (
-        <Badge
-          status={HO_STATUS_COLORS[status] as 'default' | 'processing' | 'success' | 'error' | 'warning'}
-          text={HO_STATUS_LABELS[status]}
-        />
+        <Tooltip title={HO_STATUS_LABELS[status]}>
+          <Tag color={HO_STATUS_COLORS[status]}>
+            {HO_STATUS_SHORT_LABELS[status] ?? status}
+          </Tag>
+        </Tooltip>
       ),
     },
-    ...(canEdit ? [{
+    {
       title: 'Thao tác',
       key: 'action',
-      width: 200,
+      width: canEdit ? 120 : 48,
       render: (_: unknown, record: Ho) => (
         <Space size={4}>
-          {record.status === 'dang_xu_ly' && (
-            <Popconfirm
-              title="Đánh dấu đã thống nhất phương án?"
-              onConfirm={() => thongNhatMutation.mutate(record.id)}
-            >
-              <Button size="small" type="primary">Đã thống nhất</Button>
-            </Popconfirm>
-          )}
           <Button
             size="small"
-            icon={<EditOutlined />}
-            onClick={() => { setSelectedHo(record); setEditHoOpen(true) }}
+            icon={<EyeOutlined />}
+            onClick={() => { setDetailHoId(record.id); setDetailOpen(true) }}
           />
-          <Popconfirm
-            title={`Xóa hộ ${record.ma_ho}?`}
-            description="Chỉ xóa được hộ chưa vào quy trình."
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => deleteHoMutation.mutate(record.id)}
-          >
-            <Button
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              loading={deleteHoMutation.isPending}
-            />
-          </Popconfirm>
+          {canEdit && (
+            <>
+              {record.status === 'dang_xu_ly' && (
+                <Popconfirm
+                  title="Đánh dấu đã thống nhất phương án?"
+                  onConfirm={() => thongNhatMutation.mutate(record.id)}
+                >
+                  <Tooltip title="Đã thống nhất">
+                    <Button size="small" type="primary" icon={<CheckOutlined />} />
+                  </Tooltip>
+                </Popconfirm>
+              )}
+              <Button
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => { setSelectedHo(record); setEditHoOpen(true) }}
+              />
+              <Popconfirm
+                title={`Xóa hộ ${record.ma_ho}?`}
+                description="Chỉ xóa được hộ chưa vào quy trình."
+                okText="Xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+                onConfirm={() => deleteHoMutation.mutate(record.id)}
+              >
+                <Button
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  loading={deleteHoMutation.isPending}
+                />
+              </Popconfirm>
+            </>
+          )}
         </Space>
       ),
-    }] : []),
+    },
   ]
 
   return (
@@ -422,6 +437,13 @@ function HoTab({ hoSoId }: { hoSoId: string }) {
         ho={selectedHo}
         open={editHoOpen}
         onClose={() => { setEditHoOpen(false); setSelectedHo(null) }}
+      />
+
+      <HoDetailDrawer
+        hoSoId={hoSoId}
+        hoId={detailHoId}
+        open={detailOpen}
+        onClose={() => { setDetailOpen(false); setDetailHoId(null) }}
       />
     </div>
   )
@@ -944,33 +966,37 @@ function ChiTraTab({ hoSoId }: { hoSoId: string }) {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 240,
+      width: 120,
       render: (_: unknown, record: ChiTra) => (
         <Space size="small">
           {currentUser?.role === 'ke_toan' && record.status === 'da_tao' && (
             <Popconfirm title="Gửi duyệt hồ sơ chi trả này?" onConfirm={() => guiDuyetMutation.mutate(record.id)}>
-              <Button size="small" type="primary">Gửi duyệt</Button>
+              <Tooltip title="Gửi duyệt">
+                <Button size="small" type="primary" icon={<SendOutlined />} />
+              </Tooltip>
             </Popconfirm>
           )}
           {currentUser?.role === 'gddh' && record.status === 'cho_phe_duyet' && (
             <>
               <Popconfirm title="Phê duyệt hồ sơ chi trả?" onConfirm={() => duyetMutation.mutate(record.id)}>
-                <Button size="small" type="primary" icon={<CheckOutlined />}>Duyệt</Button>
+                <Tooltip title="Phê duyệt">
+                  <Button size="small" type="primary" icon={<CheckOutlined />} />
+                </Tooltip>
               </Popconfirm>
-              <Button
-                size="small"
-                danger
-                icon={<CloseOutlined />}
-                onClick={() => setTuChoiModal({ open: true, id: record.id })}
-              >
-                Từ chối
-              </Button>
+              <Tooltip title="Từ chối">
+                <Button
+                  size="small"
+                  danger
+                  icon={<CloseOutlined />}
+                  onClick={() => setTuChoiModal({ open: true, id: record.id })}
+                />
+              </Tooltip>
             </>
           )}
           {currentUser?.role === 'cbcq' && record.status === 'da_phe_duyet' && !record.ngay_ban_giao_mat_bang && (
-            <Button size="small" onClick={() => setNgayBanGiaoModal({ open: true, id: record.id })}>
-              Cập nhật bàn giao
-            </Button>
+            <Tooltip title="Cập nhật ngày bàn giao">
+              <Button size="small" icon={<EditOutlined />} onClick={() => setNgayBanGiaoModal({ open: true, id: record.id })} />
+            </Tooltip>
           )}
           {record.ngay_ban_giao_mat_bang && (
             <span style={{ fontSize: 12, color: '#52c41a' }}>
