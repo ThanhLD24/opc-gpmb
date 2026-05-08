@@ -1,5 +1,42 @@
 # BMAD Handoff Log — OPC GPMB
 
+## Entry 023 — 2026-05-05
+**From:** TQE (Sprint 9 Testing)
+**To:** Tech Lead → BE Engineer (bug fixes)
+**Artifacts:** `docs/testing/sprint-9-results.md`, `docs/testing/bugs/BUG-S9-001.md`, `docs/testing/bugs/BUG-S9-002.md`
+**Status:** 🔴 SPRINT 9 TQE COMPLETE — 2 bugs open
+
+### Summary
+Sprint 9 TQE: 38 test cases — **34 PASS | 2 FAIL | 2 SKIP**
+
+**Bugs found:**
+
+**BUG-S9-001 (P2)** — `task_date_service.py: set_actual_start_for_next()`
+- Children của non-per_household parent node không nhận `actual_start_date` khi parent hoàn thành
+- Chỉ có horizontal (sibling) propagation; thiếu vertical (children) propagation
+- Fix: sau khi node hoàn thành, nếu node có children → set `actual_start_date` trên first child group
+
+**BUG-S9-002 (P2)** — `task.py: node_to_dict_with_tasks()`
+- HoSo workflow tree (GET /ho-so/{id}/tasks) thiếu `is_parallel`, `planned_start_date`, `planned_end_date`
+- Fix: thêm 3 fields vào `node_to_dict_with_tasks()` sau `per_household`
+
+### All passing (34/38):
+- Schema/migration: is_parallel, planned_start/end, actual_start/end — ✅
+- is_parallel API: POST/GET/PUT /workflow/nodes — ✅
+- Planned date calculation: sequential + parallel group logic — ✅
+- actual_end_date set on hoan_thanh — ✅
+- Sibling propagation (horizontal actual_start) — ✅
+- tien_do logic: dung/cham/null — ✅
+- GET /tasks: 4 date fields + tien_do — ✅
+- POST /recalculate-dates: admin OK, CBCQ/KeToan 403 — ✅
+- RBAC global tasks — ✅
+- FE: is_parallel checkbox + badge, date columns, TypeScript 0 errors — ✅
+
+### Next step:
+Tech Lead: create fix plans for BUG-S9-001 và BUG-S9-002
+
+---
+
 ## Entry 022 — 2026-05-05
 **From:** Tech Lead + BE Engineer + FE Engineer (Sprint 9)
 **To:** TQE
