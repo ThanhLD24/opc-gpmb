@@ -63,7 +63,7 @@ from app.db.models import (  # noqa: E402
 
 DB_URL_SYNC = os.environ.get(
     "DATABASE_URL_SYNC",
-    "postgresql+psycopg2://opc:opc_secret@localhost:5432/opc_gpmb",
+    "postgresql+psycopg2://opc:changeme_in_production@localhost:35432/opc_gpmb",
 )
 
 # ── Demo dataset shape ──────────────────────────────────────────────────────

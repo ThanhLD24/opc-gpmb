@@ -33,11 +33,14 @@ from sqlalchemy.orm import sessionmaker, Session
 
 DB_URL_SYNC = os.environ.get(
     "DATABASE_URL_SYNC",
-    "postgresql+psycopg2://opc:opc_secret@localhost:5432/opc_gpmb",
+    "postgresql+psycopg2://opc:changeme_in_production@localhost:35432/opc_gpmb",
 )
+
+# Default: look for the Excel file in the project root (two levels up from backend/scripts/)
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EXCEL_PATH = os.environ.get(
     "EXCEL_PATH",
-    "/Users/thanhld/Entrance/Project/ai-agent-practice/odin-gpmb/Quy trinh GPMB (1).xlsx",
+    os.path.join(_REPO_ROOT, "Quy trinh GPMB (1).xlsx"),
 )
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -54,6 +57,7 @@ from app.db.models import (  # noqa: E402
     HoSoStatusEnum,
     HoSoWorkflowNode,
     Ho,
+    HoDatInfo,
     HoStatusEnum,
     NodeHouseholdScope,
     TaskInstance,
@@ -638,19 +642,30 @@ def seed():
                     except (ValueError, TypeError):
                         pass
 
+                ho_id = uuid.uuid4()
                 ho = Ho(
-                    id=uuid.uuid4(),
+                    id=ho_id,
                     ho_so_id=ho_so.id,
                     ma_ho=str(ma_ho).strip(),
                     ten_chu_ho=str(ten_chu_ho).strip() if ten_chu_ho else "Không rõ",
                     dia_chi=str(dia_chi).strip() if dia_chi else None,
-                    loai_dat=str(loai_dat).strip() if loai_dat else None,
-                    thua=str(thua).strip() if thua else None,
-                    dien_tich=dien_tich_float,
                     status=HoStatusEnum.moi,
                 )
                 session.add(ho)
                 ho_list_objects.append(ho)
+
+                # Create HoDatInfo child record for land parcel data
+                # loai_dat is required (NOT NULL) — only create if present
+                if loai_dat:
+                    dat_info = HoDatInfo(
+                        id=uuid.uuid4(),
+                        ho_id=ho_id,
+                        loai_dat=str(loai_dat).strip(),
+                        so_thua=str(thua).strip() if thua else None,
+                        dien_tich=dien_tich_float,
+                    )
+                    session.add(dat_info)
+
                 inserted += 1
 
                 if inserted % 100 == 0:
