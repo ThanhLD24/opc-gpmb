@@ -40,7 +40,7 @@ DB_URL_SYNC = os.environ.get(
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EXCEL_PATH = os.environ.get(
     "EXCEL_PATH",
-    os.path.join(_REPO_ROOT, "Quy trinh GPMB (1).xlsx"),
+    os.path.join(_REPO_ROOT, "docs", "assets", "Quy trinh GPMB (1).xlsx"),
 )
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
